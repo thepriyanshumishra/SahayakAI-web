@@ -1,0 +1,75 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function isApprovedNGO() {
+      let isNgo = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'ngo';
+      let isVerified = get(/databases/$(database)/documents/users/$(request.auth.uid)).data.verificationStatus == 'approved';
+      return isNgo && isVerified;
+    }
+    
+    // USERS: Anyone signed in can read profiles.
+    // A user can ALWAYS read their own document (belt-and-suspenders for token race conditions).
+    match /users/{userId} {
+      allow read: if isSignedIn() || isOwner(userId);
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // TASKS: Anybody can read. 
+    // Creating standard tasks requires an Approved NGO role.
+    // However, an Emergency report can bypass the NGO limitation (flag requirement).
+    match /tasks/{taskId} {
+      allow read: if true; // Publicly readable feed
+      allow create: if isSignedIn() && (isApprovedNGO() || isAdmin() || request.resource.data.isEmergency == true);
+      allow update: if isSignedIn(); // Open for Assignment increment logic temp
+      allow delete: if isAdmin();
+    }
+
+    match /assignments/{assignmentId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /chats/{chatId} {
+      allow read, write: if isSignedIn();
+      match /messages/{messageId} {
+        allow read, write: if isSignedIn();
+      }
+    }
+
+    match /notifications/{userId}/items/{notifId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow write: if isOwner(userId) || isAdmin() || isApprovedNGO() || isSignedIn();
+    }
+
+    match /calls/{callId} {
+      allow read, write: if isSignedIn();
+    }
+
+    match /emergencyReports/{reportId} {
+      allow read: if isSignedIn();
+      allow create: if true;
+      allow update, delete: if isSignedIn() && (isApprovedNGO() || isAdmin());
+    }
+
+    // PUBLIC: meta/stats is a publicly readable aggregate document
+    match /meta/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn();
+    }
+  }
+}
