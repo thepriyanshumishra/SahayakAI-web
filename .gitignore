@@ -4,3 +4,12 @@ dist/
 .firebase/
 *.local
 .DS_Store
+
+# AI Context / Tracking Documents
+manualsetup.md
+plan.md
+prd.md
+tasks.md
+themesample.md
+seed.js
+write-stats.mjs
