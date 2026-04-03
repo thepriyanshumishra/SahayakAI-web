@@ -5,6 +5,7 @@
   },
 
   "hosting": {
+    "site": "thesahayakai",
     "public": "dist",
     "ignore": [
       "firebase.json",

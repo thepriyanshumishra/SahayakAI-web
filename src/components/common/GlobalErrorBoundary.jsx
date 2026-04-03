@@ -43,7 +43,7 @@ function ErrorFallback({ error, resetErrorBoundary }) {
           SahayakAI has run into an unexpected issue. Don't worry, your offline queued SOS requests are preserved in local cache.
         </p>
 
-        {process.env.NODE_ENV === 'development' && (
+        {import.meta.env.DEV && (
            <div style={{ 
               background: 'var(--bg-elevated)', 
               padding: 16, 

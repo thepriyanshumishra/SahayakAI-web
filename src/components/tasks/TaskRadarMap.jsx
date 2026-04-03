@@ -26,15 +26,13 @@ export default function TaskRadarMap({ tasks, userCoords, onMarkerClick }) {
           disableDefaultUI: true,
           zoomControl: true,
           mapId: 'SAHAYAK_RADAR_MAP', // Optional, better for advanced markers
-          styles: [
-            { featureType: "poi", stylers: [{ visibility: "off" }] },
-            { featureType: "transit", stylers: [{ visibility: "off" }] }
-          ]
         });
 
         // Draw Volunteer's exact radius
         const { Circle } = await loader.importLibrary('maps');
-        new google.maps.Circle({
+        const { AdvancedMarkerElement, PinElement } = await loader.importLibrary('marker');
+
+        new Circle({
           strokeColor: "#6c63ff",
           strokeOpacity: 0.8,
           strokeWeight: 2,
@@ -46,17 +44,17 @@ export default function TaskRadarMap({ tasks, userCoords, onMarkerClick }) {
         });
 
         // Add a pulsing dot for the user
-        new google.maps.Marker({
+        const userPin = new PinElement({
+          background: "#06d6a0",
+          borderColor: "#ffffff",
+          glyphColor: "#ffffff",
+          scale: 1,
+        });
+
+        new AdvancedMarkerElement({
           position: { lat: userCoords.lat, lng: userCoords.lng },
           map: mapInstance,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: "#06d6a0",
-            fillOpacity: 1,
-            strokeColor: "#ffffff",
-            strokeWeight: 2,
-          },
+          content: userPin.element,
           title: "Your Location"
         });
 
@@ -76,32 +74,37 @@ export default function TaskRadarMap({ tasks, userCoords, onMarkerClick }) {
     markers.forEach(m => m.setMap(null));
     
     // Generate new markers
-    const newMarkers = tasks.filter(t => t.location).map(task => {
-      const isHighPriority = task.priority === 'high';
-      const markerColor = isHighPriority ? '#ff4d4d' : task.priority === 'medium' ? '#ffd166' : '#06d6a0';
+    const createMarkers = async () => {
+      const { AdvancedMarkerElement, PinElement } = await google.maps.importLibrary("marker");
       
-      const pin = new google.maps.Marker({
-        position: { lat: task.location.lat, lng: task.location.lng },
-        map: map,
-        icon: {
-          path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-          scale: 6,
-          fillColor: markerColor,
-          fillOpacity: 1,
-          strokeColor: '#ffffff',
-          strokeWeight: 2
-        },
-        title: task.category
+      const newMarkers = tasks.filter(t => t.location).map(task => {
+        const isHighPriority = task.priority === 'high';
+        const markerColor = isHighPriority ? '#ff4d4d' : task.priority === 'medium' ? '#ffd166' : '#06d6a0';
+        
+        const pinElement = new PinElement({
+          background: markerColor,
+          borderColor: '#ffffff',
+          glyphColor: '#ffffff',
+        });
+
+        const marker = new AdvancedMarkerElement({
+          position: { lat: task.location.lat, lng: task.location.lng },
+          map: map,
+          content: pinElement.element,
+          title: task.category
+        });
+
+        marker.addListener('click', () => {
+          if (onMarkerClick) onMarkerClick(task);
+        });
+
+        return marker;
       });
 
-      pin.addListener('click', () => {
-        if (onMarkerClick) onMarkerClick(task);
-      });
+      setMarkers(newMarkers);
+    };
 
-      return pin;
-    });
-
-    setMarkers(newMarkers);
+    createMarkers();
     
     return () => {
        newMarkers.forEach(m => m.setMap(null));

@@ -11,7 +11,8 @@ import {
   Settings, 
   CheckCircle2,
   AlertTriangle,
-  ArrowRight
+  ArrowRight,
+  Star
 } from 'lucide-react'
 import useAuthStore from '../../store/useAuthStore.js'
 import { subscribeToTaskFeed, acceptTask } from '../../services/taskService.js'
@@ -206,10 +207,6 @@ function VolunteerDashboard() {
       </div>
     </div>
   )
-}
-
-function Star({ color, ...props }) {
-  return <Zap {...props} color={color} fill={color} /> // Simple alias for Star
 }
 
 export default VolunteerDashboard

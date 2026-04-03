@@ -14,7 +14,9 @@ import {
   ChevronRight,
   Upload,
   User,
-  Activity
+  Activity,
+  MapPin,
+  Zap
 } from 'lucide-react'
 import useAuthStore from '../../store/useAuthStore.js'
 import { subscribeToMyAssignments, completeTask, getTask } from '../../services/taskService.js'
