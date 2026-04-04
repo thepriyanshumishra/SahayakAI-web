@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../../store/useAuthStore.js'
-import { Shield, LayoutDashboard, AlertCircle, LogOut } from 'lucide-react'
+import { Shield, LayoutDashboard, LogOut, ArrowRight } from 'lucide-react'
 import { signOutUser } from '../../services/authService.js'
 
 export default function PublicNavbar() {
@@ -119,27 +119,29 @@ export default function PublicNavbar() {
             </button>
           </>
         )}
-        <button
-          onClick={() => navigate('/emergency')}
-          style={{
-            padding: '11px 28px', 
-            borderRadius: 'var(--radius-full)', 
-            border: 'none', 
-            background: 'var(--brand-primary)',
-            color: '#ffffff', 
-            cursor: 'pointer', 
-            fontSize: 14, 
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            boxShadow: 'var(--shadow-brand)',
-            transition: 'all var(--transition-base)'
-          }}
-        >
-          <AlertCircle size={18} />
-          Report Emergency
-        </button>
+        {!user && (
+          <button
+            onClick={handleJoinUs}
+            style={{
+              padding: '11px 28px',
+              borderRadius: 'var(--radius-full)',
+              border: 'none',
+              background: 'var(--brand-primary)',
+              color: '#ffffff',
+              cursor: 'pointer',
+              fontSize: 14,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              boxShadow: 'var(--shadow-brand)',
+              transition: 'all var(--transition-base)'
+            }}
+          >
+            <ArrowRight size={18} />
+            Join the Network
+          </button>
+        )}
       </div>
     </nav>
   )

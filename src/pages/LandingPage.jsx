@@ -15,7 +15,7 @@ import {
   ArrowRight, 
   Zap, 
   Globe, 
-  MessageSquare, 
+  ClipboardList, 
   WifiOff, 
   MapPin,
   Heart
@@ -25,9 +25,9 @@ import {
 const PHI = 1.618;
 
 const ROLES = [
-  { k: 'volunteer', icon: <Users size={32} />, label: 'Volunteer Force', desc: 'Be a local hero. Form teams, help your neighborhood, and earn experience badges for saving lives.', color: 'var(--brand-gold)', accent: 'var(--priority-medium-bg)' },
-  { k: 'ngo', icon: <Building2 size={32} />, label: 'NGO Command', desc: 'A unified dashboard to manage rescues. It works completely offline and predicts where help is needed most.', color: '#1967D2', accent: '#DBEAFE' },
-  { k: 'community', icon: <MessageSquare size={32} />, label: 'Community Voice', desc: 'Report emergencies simply by speaking into your phone in your own local language using voice notes.', color: 'var(--brand-accent)', accent: 'var(--priority-high-bg)' },
+  { k: 'volunteer', icon: <Users size={32} />, label: 'Volunteer Force', desc: 'Be a local hero. Browse open tasks from verified NGOs, form teams, respond to missions, and earn XP badges for every life you touch.', color: 'var(--brand-gold)', accent: 'var(--priority-medium-bg)' },
+  { k: 'ngo', icon: <Building2 size={32} />, label: 'NGO Command', desc: 'A powerful dashboard to create and manage relief tasks. Post missions, track volunteers in the field, and resolve crises at speed.', color: '#1967D2', accent: '#DBEAFE' },
+  { k: 'tasks', icon: <ClipboardList size={32} />, label: 'Smart Task Matching', desc: 'Our AI engine matches each task to the most qualified nearby volunteers — no manual searching, no missed missions.', color: 'var(--brand-accent)', accent: 'var(--priority-high-bg)' },
 ]
 
 const CAPABILITIES = [
@@ -122,8 +122,8 @@ export default function LandingPage() {
   return (
     <div className="landing-root" style={{ background: 'var(--bg-base)', minHeight: '100vh' }}>
       <Helmet>
-        <title>SahayakAI | Lifesaving Offline Disaster Network</title>
-        <meta name="description" content="An AI-powered offline disaster response platform connecting volunteers, NGOs, and communities." />
+        <title>SahayakAI | Connecting Volunteers & NGOs For Impact</title>
+        <meta name="description" content="SahayakAI is an AI-powered platform connecting verified NGOs with ready volunteers for disaster response and community aid missions." />
       </Helmet>
       <PublicNavbar />
 
@@ -144,11 +144,11 @@ export default function LandingPage() {
             </div>
 
             <h1 style={{ fontSize: 'var(--text-3xl)', lineHeight: 1, marginBottom: 24, letterSpacing: '-0.04em', color: 'var(--text-primary)' }}>
-              Get <span style={{ color: 'var(--brand-primary)' }}>Help Faster</span> During a Crisis.
+              NGOs Post Tasks. <span style={{ color: 'var(--brand-primary)' }}>Volunteers Show Up.</span>
             </h1>
 
             <p style={{ fontSize: 'var(--text-lg)', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 40, maxWidth: '90%', lineHeight: 1.6 }}>
-              We connect people in danger with local volunteers and NGOs quickly and simply, even without the internet.
+              SahayakAI connects verified NGOs with skilled local volunteers — fast, smart, and reliable even without the internet.
             </p>
 
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
@@ -157,14 +157,7 @@ export default function LandingPage() {
                 className="btn btn-primary btn-lg" 
                 style={{ fontSize: '1.1rem', padding: '0 40px' }}
               >
-                Join Global Force <ArrowRight size={20} style={{ marginLeft: 8 }} />
-              </button>
-              <button 
-                onClick={() => navigate('/emergency')} 
-                className="btn btn-secondary btn-lg"
-                style={{ padding: '0 32px' }}
-              >
-                Request Help
+                Join the Network <ArrowRight size={20} style={{ marginLeft: 8 }} />
               </button>
             </div>
 
@@ -228,7 +221,7 @@ export default function LandingPage() {
             <div style={{ textAlign: 'center', marginBottom: 80 }}>
               <h2 style={{ fontSize: 'var(--text-2xl)', marginBottom: 16, color: 'var(--text-primary)' }}>Built for Real Emergencies</h2>
               <p style={{ color: 'var(--text-secondary)', maxWidth: 600, margin: '0 auto', fontSize: '1.05rem', lineHeight: 1.6 }}>
-                When traditional emergency lines fail, SahayakAI steps in. Our platform is built to work reliably even when the internet is weak or completely disconnected.
+                SahayakAI is purpose-built for NGOs and volunteers. Create missions, match skills to tasks, and coordinate relief efforts reliably — online or offline.
               </p>
             </div>
 
@@ -261,8 +254,8 @@ export default function LandingPage() {
           <div style={{ display: 'grid', gridTemplateColumns: '0.8fr 1.2fr', gap: 64, alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: 'var(--text-2xl)', marginBottom: 24, color: 'var(--text-primary)' }}>A Unified Rescue Network</h2>
-              <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 40, lineHeight: 1.7 }}>
-                SahayakAI brings everyone together—from local citizens to certified NGOs—into one easy platform. Choose how you want to help.
+              <p style={{ color: 'var(--text-secondary)', fontWeight: 500, marginBottom: 40, lineHeight: 1.7 }}>
+                SahayakAI brings NGOs and volunteers together into one seamless platform. Create tasks, browse missions, and make a real difference.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 {['Live emergency updates', 'Verified, trusted volunteers', 'Smart resource matching'].map(feat => (

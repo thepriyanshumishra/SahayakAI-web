@@ -30,13 +30,12 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // TASKS: Anybody can read. 
-    // Creating standard tasks requires an Approved NGO role.
-    // However, an Emergency report can bypass the NGO limitation (flag requirement).
+    // TASKS: Publicly readable feed.
+    // Creating tasks is restricted to Approved NGOs and Admins only.
     match /tasks/{taskId} {
-      allow read: if true; // Publicly readable feed
-      allow create: if isSignedIn() && (isApprovedNGO() || isAdmin() || request.resource.data.isEmergency == true);
-      allow update: if isSignedIn(); // Open for Assignment increment logic temp
+      allow read: if true;
+      allow create: if isSignedIn() && (isApprovedNGO() || isAdmin());
+      allow update: if isSignedIn(); // Open for Assignment increment logic
       allow delete: if isAdmin();
     }
 
@@ -58,12 +57,6 @@ service cloud.firestore {
 
     match /calls/{callId} {
       allow read, write: if isSignedIn();
-    }
-
-    match /emergencyReports/{reportId} {
-      allow read: if isSignedIn();
-      allow create: if true;
-      allow update, delete: if isSignedIn() && (isApprovedNGO() || isAdmin());
     }
 
     // PUBLIC: meta/stats is a publicly readable aggregate document

@@ -3,7 +3,6 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Menu, 
-  ShieldAlert, 
   LogOut, 
   User, 
   Bell, 
@@ -58,17 +57,6 @@ export default function Navbar({ onMenuToggle }) {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        {/* Emergency Broadcast */}
-        <button 
-          className="btn btn-primary" 
-          onClick={() => navigate('/emergency')}
-          style={{ 
-            background: 'var(--brand-accent)', border: 'none', padding: '0 20px', height: 44,
-            boxShadow: '0 8px 16px rgba(192, 73, 43, 0.2)', fontSize: '0.85rem', fontWeight: 800
-          }}
-        >
-          <ShieldAlert size={18} /> <span className="hide-mobile">Broadcast SOS</span>
-        </button>
 
         {user && <NotificationBell />}
 

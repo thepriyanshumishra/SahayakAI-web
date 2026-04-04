@@ -18,7 +18,6 @@ import ProtectedRoute from './components/auth/ProtectedRoute.jsx'
 
 // Pages — Public (Lazy loaded)
 const LandingPage = React.lazy(() => import('./pages/LandingPage.jsx'))
-const EmergencyReportPage = React.lazy(() => import('./pages/emergency/EmergencyReportPage.jsx'))
 const UnifiedSignup = React.lazy(() => import('./pages/auth/UnifiedSignup.jsx'))
 const FeaturesPage = React.lazy(() => import('./pages/public/FeaturesPage.jsx'))
 const AboutPage = React.lazy(() => import('./pages/public/AboutPage.jsx'))
@@ -111,7 +110,6 @@ function App() {
               <Route path="/docs" element={<DocsPage />} />
               <Route path="/legal" element={<LegalPage />} />
               <Route path="/contact" element={<ContactPage />} />
-              <Route path="/emergency" element={<EmergencyReportPage />} />
 
               {/* ── Auth flow ─────────────────────────────────── */}
               <Route path="/signup" element={
