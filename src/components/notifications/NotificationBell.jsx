@@ -53,7 +53,10 @@ export default function NotificationBell() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' 
         }}
       >
-        <Bell size={20} color={unreadCount > 0 ? 'var(--brand-primary)' : 'var(--text-primary)'} style={{ transition: '0.3s' }} />
+        <Bell 
+          size={20} 
+          style={{ color: unreadCount > 0 ? 'var(--brand-primary)' : 'var(--text-primary)', transition: '0.3s' }} 
+        />
         {unreadCount > 0 && (
           <motion.span
             initial={{ scale: 0 }}
@@ -78,7 +81,7 @@ export default function NotificationBell() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="glass-card"
+            className="glass-card dropdown-menu"
             style={{
               position: 'absolute', top: 'calc(100% + 12px)', right: 0,
               width: 360, maxHeight: 480, overflow: 'hidden',

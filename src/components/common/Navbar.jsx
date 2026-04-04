@@ -94,7 +94,7 @@ export default function Navbar({ onMenuToggle }) {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="glass-card"
+                    className="glass-card dropdown-menu"
                     style={{ 
                       position: 'absolute', top: 'calc(100% + 12px)', right: 0, width: 240, 
                       padding: 12, borderRadius: 24, boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-subtle)'
