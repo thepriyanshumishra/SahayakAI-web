@@ -1474,3 +1474,66 @@ textarea.input {
     overflow-y: auto !important;
   }
 }
+
+/* ══════════════════════════════════════════════
+   NGO Management / Data Table
+══════════════════════════════════════════════ */
+
+/* Stats grid collapse on mobile */
+.ngo-stats-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 768px) {
+  .ngo-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .ngo-stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Table column headers */
+.ngo-th {
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  white-space: nowrap;
+  background: var(--bg-base);
+}
+
+/* Table data cells */
+.ngo-td {
+  padding: 14px 16px;
+  vertical-align: middle;
+  border-top: 1px solid var(--border-subtle);
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+}
+
+.ngo-td-org {
+  min-width: 200px;
+}
+
+/* Row hover */
+.ngo-table-row {
+  transition: background 0.15s;
+}
+
+.ngo-table-row:hover {
+  background: var(--bg-base);
+}
+
+/* Review action button hover */
+.ngo-review-btn:hover {
+  background: var(--brand-primary) !important;
+  color: #fff !important;
+  border-color: var(--brand-primary) !important;
+}
