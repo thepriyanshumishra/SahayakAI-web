@@ -67,7 +67,7 @@ function VolunteerDashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-end mb-10" 
+        className="flex justify-between items-end mb-10 dash-header-row" 
         style={{ flexWrap: 'wrap', gap: 24 }}
       >
         <div>
@@ -118,10 +118,10 @@ function VolunteerDashboard() {
       )}
 
       {/* STATS AREA */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32, marginBottom: 40 }}>
+      <div className="grid-2" style={{ marginBottom: 40 }}>
         <XPBar xp={profile?.xp || 0} />
         
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+        <div className="grid-2">
           {[
             { label: 'Ranking', value: `#${Math.floor(Math.random()*100)+1}`, icon: <Trophy size={18} />, color: 'var(--brand-gold)', bg: 'rgba(232, 147, 26, 0.05)' },
             { label: 'Completed Tasks', value: profile?.tasksCompleted || 0, icon: <CheckCircle2 size={18} />, color: 'var(--priority-low)', bg: 'rgba(64, 145, 108, 0.05)' },
@@ -181,7 +181,7 @@ function VolunteerDashboard() {
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Stay alert for live broadcasts from nearby NGOs.</p>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 32 }}>
+        <div className="grid-3">
           {tasks.slice(0, 4).map((task, i) => (
             <TaskCard
               key={task.id}

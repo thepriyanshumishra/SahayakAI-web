@@ -97,7 +97,7 @@ export default function CreateTaskPage() {
          <DuplicateWarning existingTask={duplicates.task} onViewExisting={() => navigate('/ngo/tasks')} onCreateNew={() => { setCreateAnyway(true); setDuplicates(null) }} />
        )}
 
-       <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: 32 }}>
+       <div className="grid-sidebar">
           <form style={{ display: 'flex', flexDirection: 'column', gap: 32 }} onSubmit={handleSubmit}>
              <div className="glass-card" style={{ padding: 32 }}>
                 <h3 style={{ fontSize: '1rem', fontWeight: 900, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>

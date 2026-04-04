@@ -49,7 +49,7 @@ function NGODashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-end mb-12" 
+        className="flex justify-between items-end mb-12 dash-header-row" 
         style={{ flexWrap: 'wrap', gap: 24 }}
       >
         <div>
@@ -77,7 +77,7 @@ function NGODashboard() {
       </motion.div>
 
       {/* QUICK ANALYTICS */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 48 }}>
+      <div className="grid-3" style={{ marginBottom: 48 }}>
         {[
           { label: 'Total Tasks', value: stats.total, icon: <ListTodo size={18} />, color: 'var(--brand-primary)', bg: 'rgba(27, 67, 50, 0.05)' },
           { label: 'Active Tasks', value: stats.active, icon: <Activity size={18} />, color: 'var(--priority-low)', bg: 'rgba(64, 145, 108, 0.05)' },
@@ -135,7 +135,7 @@ function NGODashboard() {
           </button>
         </div>
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 32 }}>
+        <div className="grid-3">
           <AnimatePresence>
             {tasks.slice(0, 6).map((task, i) => (
               <TaskCard 

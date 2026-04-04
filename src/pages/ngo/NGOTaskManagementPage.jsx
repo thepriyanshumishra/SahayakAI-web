@@ -141,7 +141,7 @@ export default function NGOTaskManagementPage() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 20px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 40, flexWrap: 'wrap', gap: 16 }}>
          <div>
             <h1 style={{ fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.04em', marginBottom: 8 }}>Fleet Operations</h1>
             <p style={{ color: 'var(--text-secondary)' }}>Manage active missions and coordinate responders across sectors.</p>
@@ -151,7 +151,7 @@ export default function NGOTaskManagementPage() {
          </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: selectedTask ? '400px 1fr' : '1fr', gap: 32 }}>
+      <div className={selectedTask ? "grid-task" : ""} style={{ display: selectedTask ? 'grid' : 'block', gap: 32 }}>
          {/* Sidebar: Mission List */}
          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {tasks.length === 0 ? (

@@ -71,7 +71,7 @@ function AdminDashboard() {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex justify-between items-end mb-12"
+        className="flex justify-between items-end mb-12 dash-header-row"
       >
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, color: 'var(--brand-primary)' }}>
@@ -90,7 +90,7 @@ function AdminDashboard() {
       </motion.div>
 
       {/* SYSTEM STATS GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 48 }}>
+      <div className="grid-4" style={{ marginBottom: 48 }}>
         {[
           { label: 'Total Node Force', value: stats.users, icon: <Users size={18} />, color: 'var(--brand-primary)', bg: 'rgba(27, 67, 50, 0.05)' },
           { label: 'Verified Responders', value: stats.volunteers, icon: <Activity size={18} />, color: 'var(--brand-secondary)', bg: 'rgba(64, 145, 108, 0.05)' },
@@ -138,7 +138,7 @@ function AdminDashboard() {
             <h2 style={{ fontSize: '1.4rem', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 10 }}>
               <Clock size={18} color="var(--brand-accent)" /> Pending NGO Authorizations
             </h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 16 }}>
+            <div className="grid-2">
               {pendingNGOs.map((ngo) => (
                 <div key={ngo.id} className="glass-card" style={{ padding: '16px 20px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-surface)' }}>
                   <div>

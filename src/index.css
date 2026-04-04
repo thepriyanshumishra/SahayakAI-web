@@ -226,6 +226,7 @@ ul, ol {
 .flex { display: flex; }
 .flex-col { flex-direction: column; }
 .items-center { align-items: center; }
+.items-end { align-items: flex-end; }
 .items-start { align-items: flex-start; }
 .justify-center { justify-content: center; }
 .justify-between { justify-content: space-between; }
@@ -750,6 +751,7 @@ textarea.input {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
 }
 
 .navbar {
@@ -787,6 +789,7 @@ textarea.input {
   font-size: var(--text-sm);
   font-weight: 500;
   margin-bottom: var(--space-6);
+  flex-wrap: wrap;
 }
 
 /* ---- XP Bar ---- */
@@ -934,8 +937,68 @@ textarea.input {
   50% { box-shadow: 0 0 60px rgba(108, 99, 255, 0.3); }
 }
 
+/* ============================================================
+   RESPONSIVE GRID UTILITY SYSTEM
+   Usage: add className to replace inline gridTemplateColumns
+   ============================================================ */
+
+/* Hero: 2-col text + visual */
+.grid-hero {
+  display: grid;
+  grid-template-columns: 1fr 0.8fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+/* Roles left / doc sidebar: asymmetric */
+.grid-roles {
+  display: grid;
+  grid-template-columns: 0.8fr 1.2fr;
+  gap: 4rem;
+  align-items: center;
+}
+
+/* Sidebar: form + narrow panel */
+.grid-sidebar {
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 32px;
+}
+
+/* Docs / Contact layout */
+.grid-docs {
+  display: grid;
+  grid-template-columns: minmax(250px, 0.35fr) 1fr;
+  gap: 48px;
+}
+
+/* Standard symmetric grids */
+.grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
+
+/* NGO task split */
+.grid-task { display: grid; grid-template-columns: 400px 1fr; gap: 32px; }
+
 /* ---- Responsive ---- */
+@media (max-width: 1024px) {
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grid-3 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .grid-hero {
+    grid-template-columns: 1fr;
+  }
+  .grid-roles {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+}
+
 @media (max-width: 768px) {
+  /* --- Core Layout --- */
   .sidebar {
     transform: translateX(-100%);
     width: 280px;
@@ -949,19 +1012,160 @@ textarea.input {
   .page-content {
     padding: var(--space-4);
   }
-  h1 { font-size: var(--text-3xl); }
-  h2 { font-size: var(--text-2xl); }
+
+  /* --- All grids collapse to single column on mobile --- */
+  .grid-hero,
+  .grid-roles,
+  .grid-sidebar,
+  .grid-docs,
+  .grid-task,
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr !important;
+    gap: 20px;
+  }
+
+  /* --- Hero visual hidden on mobile --- */
+  .hero-visual-col {
+    display: none !important;
+  }
+
+  .hide-on-mobile {
+    display: none !important;
+  }
+
+  /* --- Typography scaling --- */
+  :root {
+    --text-3xl: 2.4rem;
+    --text-2xl: 1.7rem;
+    --text-xl: 1.3rem;
+    --text-lg: 1.1rem;
+  }
+
+  h1 { font-size: var(--text-3xl) !important; }
+  h2 { font-size: var(--text-2xl) !important; }
+
+  /* --- Container --- */
+  .container {
+    padding: 0 var(--space-4);
+  }
+
+  /* --- Modals --- */
   .modal-content {
     padding: var(--space-6);
     border-radius: var(--radius-lg);
   }
+  
+  /* --- Toasts --- */
   .toast-container {
     left: var(--space-4);
     right: var(--space-4);
     bottom: var(--space-4);
     max-width: none;
   }
+
+  /* --- Navbar (Public) --- */
+  .pub-nav-desktop-links {
+    display: none !important;
+  }
+  .pub-nav-mobile-btn {
+    display: flex !important;
+  }
+
+  /* --- Mobile menu drawer --- */
+  .pub-nav-mobile-menu {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-subtle);
+    padding: 20px 24px 28px;
+    gap: 12px;
+    z-index: 999;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  }
+
+  /* --- Landing page sections --- */
+  .landing-hero-section {
+    padding: 120px 5% 60px !important;
+  }
+
+  .landing-hero-btns {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .landing-hero-btns > * {
+    text-align: center;
+    justify-content: center;
+  }
+
+  .landing-footer-top {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 32px !important;
+  }
+
+  .landing-footer-links {
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .landing-footer-bottom {
+    flex-direction: column !important;
+    gap: 8px !important;
+    align-items: flex-start !important;
+  }
+
+  /* --- Stats strip --- */
+  .stats-strip-inner {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  /* --- Verification banner --- */
+  .verification-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px;
+  }
+  
+  /* --- Dashboard header --- */
+  .dash-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  /* --- Section padding reduction --- */
+  .section-pad {
+    padding: 80px 0 !important;
+  }
+
+  /* --- Docs/contact two-col layout --- */
+  .docs-layout {
+    display: flex !important;
+    flex-direction: column !important;
+  }
 }
+
+@media (max-width: 480px) {
+  :root {
+    --text-3xl: 1.9rem;
+    --text-2xl: 1.5rem;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+  .stats-strip-inner {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+}
+
 
 /* ---- Utility Classes ---- */
 .text-primary { color: var(--text-primary); }

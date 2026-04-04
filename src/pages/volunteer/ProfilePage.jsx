@@ -146,7 +146,7 @@ export default function ProfilePage() {
          </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 1fr) 2fr', gap: 40 }}>
+      <div className="grid-docs" style={{ gap: 40 }}>
          <div style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
             {/* Identity Card */}
             <div className="glass-card" style={{ padding: 40, textAlign: 'center', background: 'white' }}>
@@ -186,7 +186,7 @@ export default function ProfilePage() {
 
          <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
             {/* Stats Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 24 }}>
+            <div className="grid-2">
                {stats.map(s => <ProfileStat key={s.label} {...s} />)}
             </div>
 
@@ -205,7 +205,7 @@ export default function ProfilePage() {
             )}
 
             {/* Skills & Badges */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div className="grid-2">
                <div className="glass-card" style={{ padding: 24 }}>
                   <h3 style={{ fontSize: '1rem', fontWeight: 900, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Zap size={18} color="var(--brand-primary)" /> Expertise Trace

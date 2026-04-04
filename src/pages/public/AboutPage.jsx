@@ -34,8 +34,8 @@ export default function AboutPage() {
           <ShieldCheck size={48} color="var(--brand-primary)" style={{ margin: '0 auto 24px' }} />
           <h2 style={{ fontSize: 'var(--text-2xl)', marginBottom: 24, fontFamily: 'var(--font-display)' }}>Our Mission</h2>
           <p style={{ fontSize: '1.1rem', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-            During natural disasters like floods, earthquakes, or cyclones, power lines and cellular networks are the first to drop. When the grid fails, people cannot call for help. Our mission is to bridge that gap. 
-            SahayakAI leverages decentralized communication, peer-to-peer networking, and SMS fallback to ensure that <strong>nobody goes unheard</strong> when they need help the most.
+            During major crises, coordination is the first thing that breaks. NGOs struggle to find skilled hands, and volunteers want to help but lack a direct mission pipe. 
+            SahayakAI bridges that gap. We provide a **resilient, decentralized infrastructure** that ensures verified NGOs can post missions and reach ready volunteers, even when the power and internet are gone.
           </p>
         </section>
 
@@ -46,7 +46,7 @@ export default function AboutPage() {
             <p style={{ color: 'var(--text-secondary)' }}>Built for the GDG Solution Challenge, supported by contributors worldwide.</p>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: 32 }}>
+          <div className="grid-3">
             <div style={{ padding: 32, border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
               <Code2 size={32} color="var(--brand-secondary)" style={{ margin: '0 auto 20px' }} />
               <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 12 }}>100% Free & Open Source</h3>

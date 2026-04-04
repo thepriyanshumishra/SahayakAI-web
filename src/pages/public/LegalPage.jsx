@@ -34,7 +34,7 @@ export default function LegalPage() {
         </p>
       </div>
 
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 0.3fr) 1fr', gap: 64 }}>
+      <div className="container grid-docs" style={{ paddingBottom: 80 }}>
         
         {/* Sidebar Nav */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -66,15 +66,15 @@ export default function LegalPage() {
               <div className="prose">
                 <h2 style={{ fontSize: 'var(--text-2xl)', marginBottom: 32 }}>Privacy Policy</h2>
                 <p style={{ marginBottom: 24, color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.8 }}>
-                  At SahayakAI, we understand that we operate during the most vulnerable moments of people's lives. We collect the absolute minimum amount of data required to dispatch emergency services to your location.
+                  At SahayakAI, we prioritize the privacy of our responders and humanitarian partners. We collect the absolute minimum amount of data required to coordinate relief missions and verify NGO credentials.
                 </p>
-                <h3 style={{ fontSize: '1.2rem', margin: '32px 0 16px' }}>1. Location Data</h3>
+                <h3 style={{ fontSize: '1.2rem', margin: '32px 0 16px' }}>1. Volunteer Location Data</h3>
                 <p style={{ marginBottom: 24, color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.8 }}>
-                  Your live location is only transmitted when you active the SOS capability. Once a mission is marked as Resolved, your live tracking is permanently deleted from our temporary cache.
+                  To match tasks effectively, we process the live location of active volunteers. This data is only used during active mission hours and is never sold or shared with third-party advertisers.
                 </p>
-                <h3 style={{ fontSize: '1.2rem', margin: '32px 0 16px' }}>2. Voice Recordings (NLP)</h3>
+                <h3 style={{ fontSize: '1.2rem', margin: '32px 0 16px' }}>2. NGO Records</h3>
                 <p style={{ marginBottom: 24, color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.8 }}>
-                  Voice notes submitted for automated emergency translation are processed in real-time. We do not store analog voice data long-term; we only retain the translated text transcript to provide context to NGOs.
+                  Organizational details and registration documents are stored securely and only accessed by SahayakAI administrators for verification purposes.
                 </p>
               </div>
             )}
@@ -83,11 +83,11 @@ export default function LegalPage() {
               <div className="prose">
                 <h2 style={{ fontSize: 'var(--text-2xl)', marginBottom: 32 }}>Terms of Service</h2>
                 <p style={{ marginBottom: 24, color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.8 }}>
-                  SahayakAI is provided as a public utility to assist in disaster response. While our network aims for 99.9% uptime and offline fallback, it should not replace official government emergency hotlines (such as 911/112) when they are available and functional.
+                  SahayakAI is provided as a NGO mission coordination tool. While we aim for high uptime and offline fallback, the platform should be used as a supplementary tool alongside official relief protocols.
                 </p>
                 <h3 style={{ fontSize: '1.2rem', margin: '32px 0 16px' }}>Volunteer Liability</h3>
                 <p style={{ marginBottom: 24, color: 'var(--text-secondary)', fontSize: '1.05rem', lineHeight: 1.8 }}>
-                  Volunteers act as independent good Samaritans. SahayakAI facilitates the connection but assumes no liability for actions taken during a rescue operation.
+                  Volunteers act as independent humanitarian workers. SahayakAI facilitates the connection but does not assume liability for actions taken during mission fulfillment.
                 </p>
               </div>
             )}
@@ -95,7 +95,7 @@ export default function LegalPage() {
             {activeTab === 'security' && (
               <div className="prose">
                 <h2 style={{ fontSize: 'var(--text-2xl)', marginBottom: 32 }}>Security & Compliance</h2>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24, marginBottom: 32 }}>
+                <div className="grid-2" style={{ marginBottom: 32 }}>
                    <div style={{ background: 'var(--bg-hover)', padding: 24, borderRadius: 12 }}>
                       <Lock size={24} color="var(--brand-primary)" style={{ marginBottom: 12 }} />
                       <h4 style={{ fontWeight: 700, marginBottom: 8 }}>E2E SMS Encryption</h4>

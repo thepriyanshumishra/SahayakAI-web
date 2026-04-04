@@ -49,7 +49,7 @@ export default function Navbar({ onMenuToggle }) {
           }}>
             <Command size={18} />
           </div>
-          <span style={{ 
+          <span className="hide-on-mobile" style={{ 
             fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '1.2rem', 
             background: 'var(--gradient-brand)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
           }}>SahayakAI</span>

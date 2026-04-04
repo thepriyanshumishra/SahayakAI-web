@@ -61,7 +61,7 @@ function TaskCard({ task, userCoords, onClick, showAcceptButton = false, onAccep
         {task.description?.slice(0, 120)}...
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
+      <div className="grid-2" style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: '0.8rem' }}>
           <MapPin size={14} />
           <span className="truncate">{task.location?.address || 'Field Location'} {distance && `· ${distance}`}</span>

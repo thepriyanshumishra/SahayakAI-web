@@ -34,7 +34,7 @@ export default function ContactPage() {
         </p>
       </div>
 
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: 'minmax(250px, 0.4fr) 1fr', gap: 64 }}>
+      <div className="container grid-docs" style={{ paddingBottom: 80 }}>
         
         {/* Contact Info */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
@@ -57,8 +57,8 @@ export default function ContactPage() {
           </div>
           
           <div style={{ background: 'var(--priority-low-bg)', padding: 24, borderRadius: 12, border: '1px solid var(--border-brand)' }}>
-             <h4 style={{ fontSize: '1rem', color: 'var(--brand-primary)', marginBottom: 8 }}>Emergency Contact</h4>
-             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Do not use this form for active emergencies. Please use the SOS broadcast feature or call local authorities.</p>
+             <h4 style={{ fontSize: '1rem', color: 'var(--brand-primary)', marginBottom: 8 }}>NGO Verification</h4>
+             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Are you an NGO waiting for approval? Please ensure you have uploaded all valid registration documents in your dashboard for our team to review.</p>
           </div>
         </aside>
 
@@ -76,7 +76,7 @@ export default function ContactPage() {
                </div>
             ) : (
                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+                  <div className="grid-2">
                      <div>
                         <label style={{ display: 'block', marginBottom: 8, fontSize: '0.9rem', fontWeight: 600 }}>Your Name</label>
                         <input required type="text" placeholder="Jane Doe" className="input-field" style={{ width: '100%', padding: '12px 16px', borderRadius: 8, border: '1px solid var(--border-default)' }} />

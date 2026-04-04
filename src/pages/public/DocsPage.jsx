@@ -9,10 +9,10 @@ import PublicNavbar from '../../components/common/PublicNavbar.jsx'
 import BackButton from '../../components/common/BackButton.jsx'
 
 const GUIDES = [
-  { icon: ShieldAlert, title: 'Reporting an Emergency', desc: 'How to use the SOS feature, voice notes, and SMS fallback.' },
-  { icon: UserCheck, title: 'Volunteer Onboarding', desc: 'Requirements to become a verified responder and earn XP.' },
-  { icon: BookOpen, title: 'NGO Alliance API', desc: 'How accredited NGOs can pull data from our Firebase backend.' },
-  { icon: WifiOff, title: 'Offline Setup', desc: 'Configuring your device to automatically relay SMS pings.' }
+  { icon: ShieldAlert, title: 'NGO Mission Control', desc: 'How NGOs create, manage, and verify relief tasks from the dashboard.' },
+  { icon: UserCheck, title: 'Volunteer Onboarding', desc: 'Requirements to become a verified responder and earn XP rewards.' },
+  { icon: BookOpen, title: 'NGO Alliance API', desc: 'How accredited NGOs can pull mission data from our Firebase backend.' },
+  { icon: WifiOff, title: 'Mesh Mesh Protocols', desc: 'Configuring your device to automatically relay task pings offline.' }
 ]
 
 export default function DocsPage() {
@@ -72,7 +72,7 @@ export default function DocsPage() {
               Welcome to the SahayakAI documentation. SahayakAI is an open-source, offline-first emergency response network designed to bridge the gap during natural disasters and infrastructure collapses.
             </p>
             <h3 style={{ fontSize: '1.4rem', marginBottom: 24, fontFamily: 'var(--font-display)' }}>Popular Guides</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 24, marginBottom: 48 }}>
+            <div className="grid-2" style={{ marginBottom: 48 }}>
               {GUIDES.map(g => (
                 <div key={g.title} style={{ padding: 24, border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', cursor: 'pointer', transition: 'all 0.2s', background: 'var(--bg-surface)', boxShadow: 'var(--shadow-sm)' }}>
                   <g.icon size={24} color="var(--brand-secondary)" style={{ marginBottom: 16 }} />
@@ -104,9 +104,9 @@ export default function DocsPage() {
             <h3 style={{ fontSize: '1.3rem', margin: '32px 0 16px' }}>Our Humanitarian Goals</h3>
             <ul style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: 0 }}>
               {[
-                { title: 'Zero Connectivity Responsetime', desc: 'Reduce the time it takes for a help signal to reach a rescue node to under 5 minutes without internet.' },
-                { title: 'Vernacular Accessibility', desc: 'Ensure individuals in remote regions can speak in their native dialect and be understood by global NGO teams.' },
-                { title: 'Community Resilience', desc: 'Empower local citizens to become verified responders using the devices they already own.' }
+                { title: 'Task Propagation Resilience', desc: 'Ensure that NGO-posted missions reach every volunteer in the zone even with zero-internet connectivity.' },
+                { title: 'AI Mission Matching', desc: 'Optimize mission success by matching volunteer skills to task requirements automatically.' },
+                { title: 'NGO Empowerment', desc: 'Provide non-profits with a robust, decentralized coordination pipe at no cost.' }
               ].map((goal, i) => (
                 <li key={i} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
                   <div style={{ color: 'var(--brand-primary)', fontWeight: 800 }}>0{i+1}.</div>
@@ -130,11 +130,11 @@ export default function DocsPage() {
             <p style={{ marginBottom: 32, color: 'var(--text-secondary)' }}>From broadcast to rescue completion, here is how the data flows through SahayakAI.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 40, borderLeft: '2px solid var(--border-subtle)', paddingLeft: 40, marginLeft: 20 }}>
               {[
-                { tag: 'BROADCAST', text: 'Distressed user triggers SOS via App or SMS fallback. GPS and User ID are bundled into a micro-payload.' },
-                { tag: 'ROUTING', text: 'Peer nodes relay the packet via the Sahayak Mesh until it reaches an active Cloud Gateway.' },
-                { tag: 'PROCESSING', text: 'Firebase Cloud Functions trigger the NLP engine to translate & categorize the urgency.' },
-                { tag: 'DISPATCH', text: 'Verified volunteers within a 5km radius receive an "Active Task" notification on their dashboard.' },
-                { tag: 'RESOLUTION', text: 'Volunteer resolves the task with proof-of-completion, notifying the NGO command center.' }
+                { tag: 'MISSION CREATION', text: 'Verified NGOs post a mission from their dashboard with title, description, and target coordinates.' },
+                { tag: 'AI SCORING', text: 'Our AI engine analyzes the mission requirements and ranks nearby volunteers by skill compatibility.' },
+                { tag: 'DISTRIBUTION', text: 'Task data is distributed through the Sahayak Mesh network via P2P and SMS relay nodes.' },
+                { tag: 'CLAIM & RESPOND', text: 'A volunteer receives the task, claims it, and is guided to the location via geospatial maps.' },
+                { tag: 'COMPLETION', text: 'The volunteer submits proof of work, earns XP/Badges, and the NGO marks the task as Resolved.' }
               ].map((step, i) => (
                 <div key={i} style={{ position: 'relative' }}>
                   <div style={{ position: 'absolute', left: -51, top: 0, width: 20, height: 20, borderRadius: '50%', background: 'white', border: '5px solid var(--brand-primary)' }} />
@@ -156,7 +156,7 @@ export default function DocsPage() {
             <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7 }}>
               SahayakAI is built on high-performance, resilient technologies to ensure stability during critical events.
             </p>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 24, marginTop: 32 }}>
+            <div className="grid-3" style={{ marginTop: 32 }}>
                <div style={{ padding: 24, background: 'var(--bg-hover)', borderRadius: 16 }}>
                   <h4 style={{ fontWeight: 800, marginBottom: 12 }}>Frontend</h4>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>React 18+, Vite, Framer Motion for snappy, performant state management and UI interactions.</p>
@@ -256,7 +256,7 @@ export default function DocsPage() {
                <h2 style={{ fontSize: 'var(--text-2xl)', fontFamily: 'var(--font-display)' }}>NGO Command Center</h2>
             </div>
             <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>The command center is designed for strategic decision-making and resource allocation.</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            <div className="grid-2">
                <div style={{ padding: 24, border: '1px solid var(--border-subtle)', borderRadius: 16 }}>
                   <h4 style={{ fontWeight: 800, marginBottom: 8 }}>Fleet Management</h4>
                   <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>View the active radius of all registered volunteers and re-assign tasks if a volunteer stalls.</p>
@@ -358,7 +358,7 @@ export default function DocsPage() {
         </p>
       </div>
 
-      <div className="container" style={{ display: 'grid', gridTemplateColumns: 'minmax(280px, 0.3fr) 1fr', gap: 64 }}>
+      <div className="container grid-docs" style={{ paddingBottom: 80 }}>
         
         {/* Sidebar Nav */}
         <aside style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>

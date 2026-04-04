@@ -53,7 +53,7 @@ export default function NotificationBell() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' 
         }}
       >
-        <Bell size={20} color={unreadCount > 0 ? 'var(--brand-primary)' : 'var(--text-muted)'} style={{ transition: '0.3s' }} />
+        <Bell size={20} color={unreadCount > 0 ? 'var(--brand-primary)' : 'var(--text-primary)'} style={{ transition: '0.3s' }} />
         {unreadCount > 0 && (
           <motion.span
             initial={{ scale: 0 }}

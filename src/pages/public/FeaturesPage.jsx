@@ -31,7 +31,7 @@ export default function FeaturesPage() {
         
         {/* Core Block 1 */}
         <section className="glass-card" style={{ padding: 48, borderRadius: 'var(--radius-xl)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
+          <div className="grid-2" style={{ alignItems: 'center' }}>
             <div>
               <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--priority-low-bg)', color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
                 <WifiOff size={32} />
@@ -58,7 +58,7 @@ export default function FeaturesPage() {
 
         {/* Core Block 2 */}
         <section className="glass-card" style={{ padding: 48, borderRadius: 'var(--radius-xl)' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, alignItems: 'center' }}>
+          <div className="grid-2" style={{ alignItems: 'center' }}>
             <div style={{ order: 2 }}>
               <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--priority-medium-bg)', color: 'var(--brand-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
                 <Cpu size={32} />

@@ -111,7 +111,7 @@ export default function ActiveTaskPage() {
        </div>
 
        {/* Control Deck */}
-       <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 32 }}>
+       <div className="grid-sidebar">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
              <div className="glass-card" style={{ padding: 0, overflow: 'hidden' }}>
                 <div style={{ display: 'flex', borderBottom: '1px solid var(--border-subtle)' }}>

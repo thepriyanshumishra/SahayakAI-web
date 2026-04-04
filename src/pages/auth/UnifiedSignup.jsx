@@ -289,7 +289,7 @@ export default function UnifiedSignup() {
 
                     <div>
                       <p style={{ fontSize: '0.7rem', color: 'var(--brand-primary)', fontWeight: 700, marginBottom: 8, paddingLeft: 4 }}>NGO Operations (1-10)</p>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8 }}>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {Array.from({length: 10}).map((_, i) => (
                            <button key={`ngo${i+1}`} type="button" className="btn btn-secondary btn-sm" onClick={() => quickLogin(`ngo${i+1}@sahayak.com`, 'password123')} disabled={loading} style={{ fontSize: '0.7rem', padding: '6px 0', justifyContent: 'center' }}>
                              N-{i+1}
@@ -300,7 +300,7 @@ export default function UnifiedSignup() {
 
                     <div>
                       <p style={{ fontSize: '0.7rem', color: 'var(--brand-primary)', fontWeight: 700, marginBottom: 8, paddingLeft: 4 }}>Volunteer Responders (1-20)</p>
-                      <div style={{ height: 110, overflowY: 'auto', paddingRight: 4, display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                      <div style={{ height: 110, overflowY: 'auto', paddingRight: 4, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                         {Array.from({length: 20}).map((_, i) => (
                            <button key={`vol${i+1}`} type="button" className="btn btn-secondary btn-sm" onClick={() => quickLogin(`vol${i+1}@sahayak.com`, 'password123')} disabled={loading} style={{ fontSize: '0.7rem', padding: '6px 0', justifyContent: 'center' }}>
                              V-{i+1}
