@@ -36,7 +36,7 @@ export default function Avatar({ src, name, size = 'md', border = false, id }) {
     background: 'var(--bg-elevated)',
     border: border ? '2px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
     position: 'relative',
-    transition: 'transform 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    transition: 'transform var(--transition-base)',
   }
 
   const placeholderStyle = {

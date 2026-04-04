@@ -55,7 +55,13 @@ export default function NotificationBell() {
       >
         <Bell 
           size={20} 
-          style={{ color: unreadCount > 0 ? 'var(--brand-primary)' : 'var(--text-primary)', transition: '0.3s' }} 
+          style={{ 
+            color: unreadCount > 0 ? '#1B4332' : 'var(--text-primary)',
+            display: 'block',
+            position: 'relative',
+            zIndex: 10,
+            pointerEvents: 'none'
+          }} 
         />
         {unreadCount > 0 && (
           <motion.span

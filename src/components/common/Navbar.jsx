@@ -36,7 +36,7 @@ export default function Navbar({ onMenuToggle }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button 
-          className="btn btn-ghost btn-icon" 
+          className="btn btn-ghost btn-icon hide-on-desktop" 
           onClick={onMenuToggle}
           style={{ padding: 8, borderRadius: 12 }}
         >

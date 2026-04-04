@@ -11,69 +11,51 @@ import {
   ShieldCheck,
   Building2,
   Users,
-  Briefcase
+  Briefcase,
+  Menu,
+  LifeBuoy
 } from 'lucide-react'
 import useAuthStore from '../../store/useAuthStore.js'
+import Avatar from './Avatar.jsx'
 
-function NavItem({ to, icon: Icon, label, id, end }) {
+function NavItem({ to, icon: Icon, label, id, end, isLast }) {
   return (
     <NavLink
       id={id}
       to={to}
       end={end}
-      style={{ textDecoration: 'none' }}
+      style={{ textDecoration: 'none', display: 'block', width: '100%' }}
+      className="nav-link-anchor"
     >
       {({ isActive }) => (
-        <motion.div
-          whileHover={{ x: 4 }}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            padding: '12px 16px',
-            margin: '4px 0',
-            borderRadius: '14px',
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-secondary)',
-            background: isActive ? 'rgba(74,103,242,0.08)' : 'transparent',
-            fontWeight: isActive ? 800 : 600,
-            fontSize: 'var(--text-sm)',
-            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            position: 'relative',
-            border: '1px solid',
-            borderColor: isActive ? 'rgba(74,103,242,0.15)' : 'transparent',
-          }}
-        >
-          {isActive && (
-            <motion.div 
-              layoutId="active-pill"
-              style={{
-                position: 'absolute', left: -8, top: '20%', bottom: '20%',
-                width: 4, background: 'var(--brand-primary)',
-                borderRadius: '0 4px 4px 0',
-                boxShadow: 'var(--shadow-brand)',
-              }} 
-            />
+        <div className="nav-item-wrapper">
+          <div
+            className="nav-item-content"
+            style={{
+              color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
+              background: isActive ? 'var(--text-primary)' : 'transparent',
+              fontWeight: isActive ? 600 : 500,
+              fontSize: '0.95rem',
+            }}
+          >
+            <Icon size={20} style={{ 
+              color: isActive ? 'var(--text-inverse)' : 'var(--text-muted)'
+            }} />
+            <span className="hide-on-collapse" style={{ flex: 1 }}>{label}</span>
+          </div>
+          
+          {/* Subtle separator line between inactive links */}
+          {!isActive && !isLast && (
+             <div className="hide-on-collapse nav-separator" />
           )}
-          <Icon size={20} style={{ 
-            strokeWidth: isActive ? 2.5 : 2,
-            color: isActive ? 'var(--brand-primary)' : 'var(--text-muted)'
-          }} />
-          <span style={{ flex: 1 }}>{label}</span>
-          {isActive && (
-             <motion.div 
-               initial={{ scale: 0 }} 
-               animate={{ scale: 1 }} 
-               style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-primary)' }} 
-             />
-          )}
-        </motion.div>
+        </div>
       )}
     </NavLink>
   )
 }
 
-export default function Sidebar({ open, onClose }) {
-  const { profile } = useAuthStore()
+export default function Sidebar({ open, onClose, onToggle }) {
+  const { profile, user } = useAuthStore()
   const role = profile?.role
 
   const volunteerLinks = [
@@ -103,8 +85,10 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       <AnimatePresence>
+        {/* Mobile backdrop */}
         {open && (
           <motion.div
+            className="sidebar-backdrop show-on-mobile hide-on-desktop"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -120,43 +104,59 @@ export default function Sidebar({ open, onClose }) {
       </AnimatePresence>
 
       <aside className={`sidebar${open ? ' open' : ''}`}>
-        {/* Brand */}
-        <div style={{ padding: '32px 24px', borderBottom: '1px solid var(--border-subtle)' }}>
-           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ 
-                width: 48, height: 48, borderRadius: 16, background: 'var(--gradient-brand)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
-              }}>
-                <LayoutDashboard size={24} />
-              </div>
-              <div>
-                <p style={{ fontFamily: 'var(--font-display)', fontWeight: 900, fontSize: '1.4rem', color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0 }}>SahayakAI</p>
-                <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--brand-primary)', textTransform: 'uppercase', letterSpacing: 1, margin: 0 }}>{role === 'admin' ? 'System Admin' : role || 'Guest'}</p>
-              </div>
+        
+        {/* Toggle header matching frontend design */}
+        <div className="sidebar-toggle-header">
+           <span className="hide-on-collapse" style={{ fontWeight: 800, fontSize: '1.2rem', color: 'var(--text-primary)' }}>Dashboard</span>
+           <button 
+             className="btn btn-ghost btn-icon hide-on-mobile sidebar-toggle-btn" 
+             onClick={onToggle}
+           >
+             <Menu size={20} color="var(--text-primary)" />
+           </button>
+        </div>
+
+        {/* Profile Header section */}
+        <div className="sidebar-profile-header">
+           <Avatar 
+             src={profile?.photoURL || user?.photoURL}
+             name={profile?.displayName || user?.displayName || 'User'}
+             size="xl"
+             border={false}
+           />
+           <div className="hide-on-collapse text-center" style={{ marginTop: 24, width: '100%' }}>
+             <h2 className="truncate" style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', margin: 0, width: '100%' }}>
+               {profile?.displayName || user?.displayName || 'Authorized User'}
+             </h2>
+             <p className="truncate" style={{ marginTop: 4, fontSize: '0.85rem', color: 'var(--text-muted)', textTransform: 'capitalize', margin: '4px 0 0 0', width: '100%' }}>
+               {role === 'admin' ? 'System Administrator' : role || 'Guest'}
+             </p>
            </div>
         </div>
 
         {/* Navigation */}
-        <nav style={{ flex: 1, padding: '24px 16px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {links.map((l) => (
-            <NavItem key={l.to} {...l} />
+        <nav className="sidebar-nav">
+          {links.map((l, i) => (
+            <NavItem key={l.to} {...l} isLast={i === links.length - 1} />
           ))}
         </nav>
 
         {/* Footer info */}
-        <div style={{ padding: '24px', borderTop: '1px solid var(--border-subtle)' }}>
-           <div className="glass-card" style={{ padding: 16, borderRadius: 20 }}>
-              <p style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1 }}>CONNECTED AS</p>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                 <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--brand-primary)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    {role === 'volunteer' ? <Users size={18} /> : role === 'ngo' ? <Building2 size={18} /> : <ShieldCheck size={18} />}
-                 </div>
-                 <div style={{ overflow: 'hidden' }}>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }} className="truncate">{profile?.displayName || 'Authorized User'}</p>
-                    <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Status: Active Node</p>
-                 </div>
-              </div>
+        <div className="sidebar-footer">
+           <div className="hide-on-collapse" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--brand-secondary)' }} />
+              <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>Online</span>
            </div>
+           
+           <button 
+             className="btn btn-ghost sidebar-footer-btn"
+             style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+             onClick={() => window.location.href = 'mailto:support@sahayakai.com'}
+             title="Support"
+           >
+             <LifeBuoy size={20} className="sidebar-footer-icon" />
+             <span className="hide-on-collapse">Support</span>
+           </button>
         </div>
       </aside>
     </>

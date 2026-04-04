@@ -48,8 +48,12 @@ function AppShell({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   return (
     <div className="page-layout">
-      <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="main-content">
+      <Sidebar 
+        open={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)} 
+        onToggle={() => setSidebarOpen(v => !v)}
+      />
+      <div className={`main-content ${sidebarOpen ? 'desktop-collapsed' : ''}`}>
         <Navbar onMenuToggle={() => setSidebarOpen((v) => !v)} />
         {children}
       </div>
