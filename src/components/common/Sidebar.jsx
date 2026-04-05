@@ -22,38 +22,8 @@ import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../../store/useAuthStore.js'
 import Avatar from './Avatar.jsx'
 
-function NavItem({ to, icon: Icon, label, id, end, isLast, onClick }) {
-  const content = ({ isActive }) => (
-    <div className="nav-item-wrapper">
-      <div
-        className="nav-item-content"
-        style={{
-          color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
-          background: isActive ? 'var(--text-primary)' : 'transparent',
-          fontWeight: isActive ? 600 : 500,
-          fontSize: '0.95rem',
-        }}
-      >
-        <Icon size={20} className="nav-icon" style={{ 
-          color: isActive ? 'var(--text-inverse)' : 'var(--text-muted)'
-        }} />
-        <span className="hide-on-collapse">{label}</span>
-      </div>
-      
-      {!isActive && !isLast && (
-         <div className="hide-on-collapse nav-separator" />
-      )}
-    </div>
-  );
-
-  if (onClick) {
-    return (
-      <div id={id} onClick={onClick} style={{ cursor: 'pointer', width: '100%' }}>
-        {content({ isActive: false })}
-      </div>
-    );
-  }
-
+function NavItem({ to, icon: Icon, label, id, end, isLast, onIntercept }) {
+  // If onIntercept is provided, we intercept the click; otherwise use NavLink directly
   return (
     <NavLink
       id={id}
@@ -61,8 +31,29 @@ function NavItem({ to, icon: Icon, label, id, end, isLast, onClick }) {
       end={end}
       style={{ textDecoration: 'none', display: 'block', width: '100%' }}
       className="nav-link-anchor"
+      onClick={onIntercept ? (e) => { e.preventDefault(); onIntercept(to) } : undefined}
     >
-      {content}
+      {({ isActive }) => (
+        <div className="nav-item-wrapper">
+          <div
+            className="nav-item-content"
+            style={{
+              color: isActive ? 'var(--text-inverse)' : 'var(--text-secondary)',
+              background: isActive ? 'var(--text-primary)' : 'transparent',
+              fontWeight: isActive ? 600 : 500,
+              fontSize: '0.95rem',
+            }}
+          >
+            <Icon size={20} className="nav-icon" style={{ 
+              color: isActive ? 'var(--text-inverse)' : 'var(--text-muted)'
+            }} />
+            <span className="hide-on-collapse">{label}</span>
+          </div>
+          {!isActive && !isLast && (
+            <div className="hide-on-collapse nav-separator" />
+          )}
+        </div>
+      )}
     </NavLink>
   )
 }
@@ -165,7 +156,7 @@ export default function Sidebar({ open, onClose, onToggle }) {
               key={l.to} 
               {...l} 
               isLast={i === links.length - 1} 
-              onClick={() => handleNavClick(l.to)}
+              onIntercept={isPending ? (to) => handleNavClick(to) : undefined}
             />
           ))}
         </nav>
