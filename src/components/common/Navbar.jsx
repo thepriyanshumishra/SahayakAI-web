@@ -1,14 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Menu, 
   LogOut, 
   User, 
-  Bell, 
-  LayoutDashboard,
   ChevronDown,
-  Sparkles,
   Command
 } from 'lucide-react'
 import useAuthStore from '../../store/useAuthStore.js'
@@ -22,27 +19,40 @@ export default function Navbar({ onMenuToggle }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
 
   const handleSignOut = async () => {
+    setUserMenuOpen(false)
     await signOutUser()
     useAuthStore.getState().reset()
     navigate('/')
   }
+
+  // Close dropdown on Escape key
+  const handleKeyDown = useCallback((e) => {
+    if (e.key === 'Escape') setUserMenuOpen(false)
+  }, [])
+
+  useEffect(() => {
+    if (userMenuOpen) document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [userMenuOpen, handleKeyDown])
 
   return (
     <nav className="navbar glass-card" style={{ 
       position: 'sticky', top: 0, 
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
       padding: '0 24px', height: 72, borderBottom: '1px solid var(--border-subtle)',
-      borderRadius: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none'
+      borderRadius: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none',
+      zIndex: 'var(--z-sticky)'
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <button 
           className="btn btn-ghost btn-icon hide-on-desktop" 
           onClick={onMenuToggle}
           style={{ padding: 8, borderRadius: 12 }}
+          aria-label="Toggle sidebar"
         >
           <Menu size={20} color="var(--text-primary)" />
         </button>
-        <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
+        <Link to="/dashboard" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{ 
             width: 36, height: 36, borderRadius: 10, background: 'var(--gradient-brand)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
@@ -61,21 +71,12 @@ export default function Navbar({ onMenuToggle }) {
         {user && <NotificationBell />}
 
         {user && (
-          <button 
-            className="btn btn-ghost btn-icon" 
-            onClick={handleSignOut}
-            title="Log Out"
-            style={{ padding: 10, borderRadius: 12, background: 'var(--priority-high-bg)', color: 'var(--brand-accent)' }}
-          >
-            <LogOut size={18} />
-          </button>
-        )}
-
-        {user && (
           <div style={{ position: 'relative' }}>
             <button 
               className="btn btn-ghost" 
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              onClick={() => setUserMenuOpen(v => !v)}
+              aria-expanded={userMenuOpen}
+              aria-haspopup="true"
               style={{ padding: '4px 12px 4px 4px', borderRadius: 99, background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', gap: 8 }}
             >
               <Avatar 
@@ -89,20 +90,29 @@ export default function Navbar({ onMenuToggle }) {
             <AnimatePresence>
               {userMenuOpen && (
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: -1 }} onClick={() => setUserMenuOpen(false)} />
+                  {/* Backdrop — above page content, below dropdown */}
+                  <div 
+                    style={{ position: 'fixed', inset: 0, zIndex: 98 }} 
+                    onClick={() => setUserMenuOpen(false)} 
+                    aria-hidden="true"
+                  />
                   <motion.div 
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    transition={{ duration: 0.18 }}
                     className="glass-card dropdown-menu"
                     style={{ 
                       position: 'absolute', top: 'calc(100% + 12px)', right: 0, width: 240, 
-                      padding: 12, borderRadius: 24, boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-subtle)'
+                      padding: 12, borderRadius: 24, boxShadow: 'var(--shadow-xl)', 
+                      border: '1px solid var(--border-subtle)',
+                      background: 'var(--bg-surface)',
+                      zIndex: 99
                     }}
                   >
                     <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', marginBottom: 8 }}>
-                       <p style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)' }}>{profile?.displayName || user.displayName}</p>
-                       <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }} className="truncate">{profile?.email || user.email}</p>
+                       <p style={{ fontSize: '0.9rem', fontWeight: 900, color: 'var(--text-primary)' }}>{profile?.displayName || user?.displayName}</p>
+                       <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: 2 }} className="truncate">{profile?.email || user?.email}</p>
                     </div>
                     
                     <button 
@@ -130,3 +140,4 @@ export default function Navbar({ onMenuToggle }) {
     </nav>
   )
 }
+
