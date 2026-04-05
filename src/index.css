@@ -981,6 +981,7 @@ textarea.input {
 
 /* Standard symmetric grids */
 .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.profile-grid { display: grid; grid-template-columns: 1fr 1.35fr; gap: 24px; align-items: start; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
 .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 32px; }
 
@@ -1260,7 +1261,18 @@ textarea.input {
   display: none !important;
 }
 
+/* --- Responsive Utilities --- */
+.p-responsive { padding: 32px; }
+.p-responsive-lg { padding: 48px; }
+.p-responsive-xl { padding: 60px; }
+.flex-wrap { flex-wrap: wrap; }
+
 @media (max-width: 768px) {
+  /* Shrink heavy paddings on mobile */
+  .p-responsive { padding: 16px !important; }
+  .p-responsive-lg { padding: 20px !important; }
+  .p-responsive-xl { padding: 24px !important; }
+
   .hide-on-desktop {
     display: flex !important;
   }
@@ -1278,6 +1290,7 @@ textarea.input {
   .grid-sidebar,
   .grid-docs,
   .grid-task,
+  .profile-grid,
   .grid-2,
   .grid-3,
   .grid-4 {

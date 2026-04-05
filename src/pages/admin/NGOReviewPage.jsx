@@ -538,7 +538,7 @@ export default function NGOReviewPage() {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={5} style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                      <td colSpan={5} className="p-responsive-xl" style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
                         <Building2 size={36} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
                         <p>No NGOs match your current filter.</p>
                       </td>

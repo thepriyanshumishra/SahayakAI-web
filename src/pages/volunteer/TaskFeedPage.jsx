@@ -82,7 +82,7 @@ function TaskFeedPage() {
   })
 
   return (
-    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '40px 20px' }}>
+    <div className="p-responsive-lg" style={{ maxWidth: 1200, margin: '0 auto' }}>
       <BackButton />
       
       {/* HEADER SECTION */}
@@ -194,7 +194,7 @@ function TaskFeedPage() {
             ) : loading ? (
                [1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: 200, borderRadius: 24 }} />)
             ) : filtered.length === 0 ? (
-               <div className="glass-card" style={{ padding: 60, textAlign: 'center', gridColumn: '1 / -1' }}>
+               <div className="glass-card p-responsive-xl" style={{ textAlign: 'center', gridColumn: '1 / -1' }}>
                   <LayoutList size={48} color="var(--border-default)" style={{ marginBottom: 20 }} />
                   <p style={{ fontWeight: 700, color: 'var(--text-muted)' }}>No live missions available in this area</p>
                </div>
@@ -216,9 +216,9 @@ function TaskFeedPage() {
                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
                  animate={{ opacity: 1, scale: 1, y: 0 }}
                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                 className="glass-card"
+                 className="glass-card p-responsive"
                  style={{ 
-                   position: 'relative', width: '100%', maxWidth: 550, padding: 32, 
+                   position: 'relative', width: '100%', maxWidth: 550, 
                    borderRadius: 'var(--radius-2xl)', zIndex: 1, border: '1px solid var(--border-subtle)',
                    boxShadow: 'var(--shadow-xl)', background: 'var(--bg-base)',
                    maxHeight: '90vh', overflowY: 'auto'

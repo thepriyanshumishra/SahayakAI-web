@@ -215,9 +215,9 @@ function VolunteerDashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="glass-card"
+              className="glass-card p-responsive"
               style={{ 
-                position: 'relative', width: '100%', maxWidth: 550, padding: 32, 
+                position: 'relative', width: '100%', maxWidth: 550, 
                 borderRadius: 'var(--radius-2xl)', zIndex: 1, border: '1px solid var(--border-subtle)',
                 boxShadow: 'var(--shadow-xl)', background: 'var(--bg-base)',
                 maxHeight: '90vh', overflowY: 'auto'
@@ -289,7 +289,7 @@ function VolunteerDashboard() {
         <h2 style={{ fontSize: 'var(--text-lg)', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
           <Trophy size={20} color="var(--brand-gold)" /> Service Achievement
         </h2>
-        <div className="glass-card" style={{ padding: 32 }}>
+        <div className="glass-card p-responsive">
           <BadgeDisplay earnedBadgeIds={profile?.badges || []} compact={false} />
         </div>
       </div>

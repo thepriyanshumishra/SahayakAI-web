@@ -13,7 +13,9 @@ import {
   ChevronLeft,
   User,
   Smartphone,
-  Sparkles
+  Sparkles,
+  Plus,
+  Minus
 } from 'lucide-react'
 import {
   signInWithGoogle,
@@ -182,12 +184,12 @@ export default function UnifiedSignup() {
 
         <motion.div 
           layout
-          className="glass-card" 
-          style={{ width: '100%', maxWidth: 480, padding: 48, borderRadius: 'var(--radius-2xl)', boxShadow: 'var(--shadow-xl)', position: 'relative', zIndex: 1 }}
+          className="glass-card p-responsive" 
+          style={{ width: '100%', maxWidth: 480, borderRadius: 'var(--radius-2xl)', boxShadow: 'var(--shadow-xl)', position: 'relative', zIndex: 1 }}
         >
           {/* Progress Bar */}
           {mode === 'signup' && (
-            <div style={{ marginBottom: 40 }}>
+            <div style={{ marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: 1 }}>
                 <span>ONBOARDING STEP {step} OF 5</span>
                 <span>{Math.round(progress)}% Complete</span>
@@ -324,12 +326,85 @@ export default function UnifiedSignup() {
                     onChange={e => setFormData({ ...formData, name: e.target.value })} 
                    />
                  </div>
-                 <div className="form-group" style={{ marginTop: 16 }}>
-                   <label className="label">Your Age</label>
-                   <input 
-                    type="number" className="input" required value={formData.age} 
-                    onChange={e => setFormData({ ...formData, age: e.target.value })} 
-                   />
+                 <div className="form-group" style={{ marginTop: 24 }}>
+                   <label className="label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                     <span>Your Age</span>
+                     <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--brand-primary)' }}>{formData.age ? `${formData.age} Years` : 'Not Set'}</span>
+                   </label>
+                   <div style={{ 
+                     display: 'flex', 
+                     alignItems: 'center', 
+                     gap: 12,
+                     background: 'var(--bg-card)',
+                     padding: '8px 12px',
+                     borderRadius: 'var(--radius-xl)',
+                     border: '1px solid var(--border-subtle)',
+                     marginTop: 8
+                   }}>
+                     <button 
+                       type="button"
+                       onClick={() => {
+                         const currentAge = parseInt(formData.age) || 0;
+                         if (currentAge > 0) {
+                           setFormData({ ...formData, age: (currentAge - 1).toString() });
+                         }
+                       }}
+                       style={{ 
+                         width: 42, 
+                         height: 42, 
+                         borderRadius: 12, 
+                         border: 'none', 
+                         background: 'var(--bg-base)', 
+                         color: 'var(--text-primary)',
+                         display: 'flex', 
+                         alignItems: 'center', 
+                         justifyContent: 'center',
+                         cursor: 'pointer'
+                       }}
+                     >
+                       <Minus size={20} />
+                     </button>
+                     
+                     <input 
+                       type="number" 
+                       className="input" 
+                       style={{ 
+                         textAlign: 'center', 
+                         fontSize: '1.25rem', 
+                         fontWeight: 900, 
+                         border: 'none', 
+                         background: 'transparent',
+                         flex: 1,
+                         padding: 0
+                       }} 
+                       required 
+                       value={formData.age} 
+                       onChange={e => setFormData({ ...formData, age: e.target.value })} 
+                       placeholder="0"
+                     />
+
+                     <button 
+                       type="button"
+                       onClick={() => {
+                         const currentAge = parseInt(formData.age) || 0;
+                         setFormData({ ...formData, age: (currentAge + 1).toString() });
+                       }}
+                       style={{ 
+                         width: 42, 
+                         height: 42, 
+                         borderRadius: 12, 
+                         border: 'none', 
+                         background: 'var(--brand-primary)', 
+                         color: 'white',
+                         display: 'flex', 
+                         alignItems: 'center', 
+                         justifyContent: 'center',
+                         cursor: 'pointer'
+                       }}
+                     >
+                       <Plus size={20} />
+                     </button>
+                   </div>
                  </div>
                  <button className="btn btn-primary" style={{ width: '100%', marginTop: 32 }} onClick={() => setStep(3)}>
                    Continue <ArrowRight size={18} />
@@ -352,8 +427,8 @@ export default function UnifiedSignup() {
 
             {step === 3 && (
                <motion.div key="step3" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                 <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: 8 }}>Choose Mission Role</h2>
-                 <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>Define your primary point of impact.</p>
+                 <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: 4 }}>Choose Mission Role</h2>
+                 <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>Define your primary point of impact.</p>
                  
                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     {[
@@ -379,7 +454,7 @@ export default function UnifiedSignup() {
                     ))}
                  </div>
 
-                 <div className="flex gap-3 mt-8">
+                 <div className="flex gap-3 mt-6">
                     <button className="btn btn-ghost" onClick={() => setStep(2)}>Back</button>
                     <button className="btn btn-primary flex-1" onClick={() => formData.role && setStep(4)} disabled={!formData.role}>
                       Next Step
@@ -390,8 +465,8 @@ export default function UnifiedSignup() {
 
             {step === 4 && (
                <motion.div key="step4" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}>
-                 <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: 8 }}>Contact & Verification</h2>
-                 <p style={{ color: 'var(--text-secondary)', marginBottom: 32 }}>Essential for mission dispatch.</p>
+                 <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: 4 }}>Contact & Verification</h2>
+                 <p style={{ color: 'var(--text-secondary)', marginBottom: 24 }}>Essential for mission dispatch.</p>
                  
                  {formData.role === 'volunteer' ? (
                    <>
@@ -417,7 +492,7 @@ export default function UnifiedSignup() {
                    </>
                  )}
 
-                 <div className="flex gap-3 mt-8">
+                 <div className="flex gap-3 mt-6">
                     <button className="btn btn-ghost" onClick={() => setStep(3)}>Back</button>
                     <button className="btn btn-primary flex-1" onClick={() => setStep(5)}>
                       Final Step

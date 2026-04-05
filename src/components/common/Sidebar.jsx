@@ -105,6 +105,9 @@ export default function Sidebar({ open, onClose, onToggle }) {
     } else {
       navigate(to)
     }
+    if (window.innerWidth < 768 && onClose) {
+      onClose()
+    }
   }
 
   return (

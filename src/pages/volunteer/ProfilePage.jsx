@@ -297,7 +297,7 @@ export default function ProfilePage() {
       </motion.div>
 
       {/* ── Two-Column Layout ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1.35fr', gap: 24, alignItems: 'start' }}>
+      <div className="profile-grid">
 
         {/* ── LEFT: Profile Card ── */}
         <motion.div
@@ -483,7 +483,7 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}
+                className="grid-2" style={{ gap: 14 }}
               >
                 <InfoCard icon={Award}    label="Neural Level"    value={`Level ${level}`}       accent="var(--brand-gold)" />
                 <InfoCard icon={Star}     label="Mission Rating"  value={profile?.rating ? `${profile.rating.toFixed(1)} ★` : '4.8 ★'} accent="var(--brand-primary)" />
@@ -527,7 +527,7 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}
+                className="grid-2" style={{ gap: 14 }}
               >
                 {/* Skills */}
                 <div style={{
@@ -575,7 +575,7 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}
+                className="grid-2" style={{ gap: 14 }}
               >
                 <InfoCard icon={Building2}  label="Verified NGO"      value={profile?.orgName || 'NGO Node'}         accent="var(--brand-primary)" />
                 <InfoCard icon={ShieldCheck} label="Protocol Status"   value={verificationStatus}
@@ -629,7 +629,7 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.1 }}
-                style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}
+                className="grid-2" style={{ gap: 14 }}
               >
                 <InfoCard icon={ShieldCheck} label="Access Level"    value="Administrator"  accent="var(--brand-primary)" />
                 <InfoCard icon={Lock}        label="System Role"     value="Full Access"    accent="var(--priority-low)" />

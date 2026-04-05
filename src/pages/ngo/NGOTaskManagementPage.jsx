@@ -122,7 +122,7 @@ export default function NGOTaskManagementPage() {
       </div>
 
       {/* SEARCH & FILTER BAR */}
-      <div style={{ display: 'flex', gap: 12, marginBottom: 32, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 12, marginBottom: 32, alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           <ArrowDownWideNarrow size={16} /> Sort By
         </div>
@@ -159,7 +159,7 @@ export default function NGOTaskManagementPage() {
          {/* Sidebar: Mission List */}
          <div className="grid-3" style={{ gap: 16 }}>
             {tasks.length === 0 ? (
-               <div className="glass-card" style={{ padding: 60, textAlign: 'center', gridColumn: selectedTask ? 'unset' : '1 / -1' }}>
+               <div className="glass-card p-responsive-xl" style={{ textAlign: 'center', gridColumn: selectedTask ? 'unset' : '1 / -1' }}>
                   <LayoutList size={48} color="var(--border-default)" style={{ marginBottom: 20 }} />
                   <p style={{ fontWeight: 700, color: 'var(--text-muted)' }}>No active deployments</p>
                </div>
@@ -198,15 +198,15 @@ export default function NGOTaskManagementPage() {
                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
                  animate={{ opacity: 1, scale: 1, y: 0 }}
                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                 className="glass-card"
+                 className="glass-card p-responsive"
                  style={{ 
-                   position: 'relative', width: '100%', maxWidth: 700, padding: 32, 
+                   position: 'relative', width: '100%', maxWidth: 700, 
                    borderRadius: 'var(--radius-2xl)', zIndex: 1, border: '1px solid var(--border-subtle)',
                    boxShadow: 'var(--shadow-xl)', background: 'var(--bg-base)',
                    maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 24
                  }}
                >
-               <div className="glass-card" style={{ padding: 32 }}>
+               <div className="glass-card p-responsive">
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
                      <div>
                         <h2 style={{ fontSize: '1.2rem', fontWeight: 900, marginBottom: 8 }}>{selectedTask.aiSummary}</h2>
@@ -288,7 +288,7 @@ export default function NGOTaskManagementPage() {
                      {activeView === 'call-history' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                            {callHistory.length === 0 ? (
-                              <div style={{ textAlign: 'center', padding: 40 }}>
+                              <div className="p-responsive-lg" style={{ textAlign: 'center' }}>
                                  <Video size={40} color="var(--border-default)" style={{ marginBottom: 12 }} />
                                  <p style={{ color: 'var(--text-muted)' }}>No communication logs recorded</p>
                               </div>

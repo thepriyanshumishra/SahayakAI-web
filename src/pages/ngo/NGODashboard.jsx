@@ -174,9 +174,9 @@ function NGODashboard() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="glass-card"
+              className="glass-card p-responsive"
               style={{ 
-                position: 'relative', width: '100%', maxWidth: 550, padding: 32, 
+                position: 'relative', width: '100%', maxWidth: 550, 
                 borderRadius: 'var(--radius-2xl)', zIndex: 1, border: '1px solid var(--border-subtle)',
                 boxShadow: 'var(--shadow-xl)',
                 background: 'var(--bg-base)',

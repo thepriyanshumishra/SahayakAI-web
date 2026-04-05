@@ -47,10 +47,20 @@ function SkillsAutocomplete({ value = [], onChange }) {
   // Compute suggestions whenever input changes
   useEffect(() => {
     const q = input.trim().toLowerCase()
-    if (!q) { setSuggestions([]); return }
-    const filtered = PRESET_SKILLS
-      .filter(s => s.toLowerCase().includes(q) && !value.includes(s))
-      .slice(0, 8)
+    
+    let filtered;
+    if (!q) {
+      // Show default recommendations when empty
+      filtered = PRESET_SKILLS
+        .filter(s => !value.includes(s))
+        .slice(0, 8)
+    } else {
+      // Show matching suggestions while typing
+      filtered = PRESET_SKILLS
+        .filter(s => s.toLowerCase().includes(q) && !value.includes(s))
+        .slice(0, 8)
+    }
+    
     setSuggestions(filtered)
   }, [input, value])
 

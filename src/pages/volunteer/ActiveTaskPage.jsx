@@ -180,7 +180,7 @@ export default function ActiveTaskPage() {
           </div>
 
           <aside style={{ display: 'flex', flexDirection: 'column', gap: 24, position: 'sticky', top: 24 }}>
-             <div className="profile-left-card" style={{ padding: 32 }}>
+             <div className="profile-left-card p-responsive">
                 <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, color: 'var(--brand-primary)', letterSpacing: '-0.01em' }}>
                    <ShieldCheck size={24} strokeWidth={2.5} /> Mission Protocol
                 </h3>

@@ -89,7 +89,7 @@ export default function Navbar({ onMenuToggle }) {
             <AnimatePresence>
               {userMenuOpen && (
                 <>
-                  <div style={{ position: 'fixed', inset: 0, zIndex: -1 }} onClick={() => setUserMenuOpen(false)} />
+                  <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setUserMenuOpen(false)} />
                   <motion.div 
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -97,7 +97,8 @@ export default function Navbar({ onMenuToggle }) {
                     className="glass-card dropdown-menu"
                     style={{ 
                       position: 'absolute', top: 'calc(100% + 12px)', right: 0, width: 240, 
-                      padding: 12, borderRadius: 24, boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-subtle)'
+                      padding: 12, borderRadius: 24, boxShadow: 'var(--shadow-xl)', border: '1px solid var(--border-subtle)',
+                      zIndex: 50
                     }}
                   >
                     <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', marginBottom: 8 }}>
