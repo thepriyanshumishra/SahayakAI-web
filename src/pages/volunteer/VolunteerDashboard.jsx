@@ -12,14 +12,19 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Star
+  Star,
+  ClipboardList,
+  X
 } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 import useAuthStore from '../../store/useAuthStore.js'
 import { subscribeToTaskFeed, acceptTask } from '../../services/taskService.js'
 import useLocationStore from '../../store/useLocationStore.js'
 import useLocation from '../../hooks/useLocation.js'
 import { sortTasksByPriorityAndDistance } from '../../utils/distance.js'
 import TaskCard from '../../components/tasks/TaskCard.jsx'
+import PriorityBadge from '../../components/common/PriorityBadge.jsx'
+import LiveMap from '../../components/tracking/LiveMap.jsx'
 import XPBar from '../../components/engagement/XPBar.jsx'
 import BadgeDisplay from '../../components/engagement/BadgeDisplay.jsx'
 
@@ -28,6 +33,7 @@ function VolunteerDashboard() {
   const { coords } = useLocationStore()
   const { requestLocation } = useLocation()
   const [tasks, setTasks] = useState([])
+  const [selectedTask, setSelectedTask] = useState(null)
   const [accepting, setAccepting] = useState(null)
   const [error, setError] = useState(null)
   const navigate = useNavigate()
@@ -174,26 +180,109 @@ function VolunteerDashboard() {
       )}
 
       {tasks.length === 0 ? (
-        <div className="glass-card" style={{ textAlign: 'center', padding: 80 }}>
-          <div style={{ fontSize: 48, opacity: 0.3, marginBottom: 16 }}>🌍</div>
-          <p style={{ fontWeight: 700, color: 'var(--text-secondary)' }}>Quiet in your sector (Currently)</p>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Stay alert for live broadcasts from nearby NGOs.</p>
+        <div className="glass-card" style={{ textAlign: 'center', padding: '60px 20px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-subtle)' }}>
+          <div style={{ width: 64, height: 64, background: 'var(--bg-hover)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+            <ClipboardList size={32} color="var(--text-muted)" />
+          </div>
+          <p style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '1.2rem', marginBottom: 8 }}>Quiet in your sector (Currently)</p>
+          <p style={{ color: 'var(--text-secondary)' }}>Stay alert for live broadcasts from nearby NGOs.</p>
         </div>
       ) : (
         <div className="grid-3">
-          {tasks.slice(0, 4).map((task, i) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              userCoords={coords}
-              onClick={() => navigate(`/volunteer/tasks`)}
-              showAcceptButton={isPhoneVerified}
-              onAccept={handleAccept}
-              accepting={accepting === task.id}
-            />
-          ))}
+          <AnimatePresence>
+            {tasks.slice(0, 6).map((task, i) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                userCoords={coords}
+                onClick={() => setSelectedTask(task)}
+              />
+            ))}
+          </AnimatePresence>
         </div>
       )}
+
+      {/* TASK DETAILS MODAL */}
+      <AnimatePresence>
+        {selectedTask && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setSelectedTask(null)}
+              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-card"
+              style={{ 
+                position: 'relative', width: '100%', maxWidth: 550, padding: 32, 
+                borderRadius: 'var(--radius-2xl)', zIndex: 1, border: '1px solid var(--border-subtle)',
+                boxShadow: 'var(--shadow-xl)', background: 'var(--bg-base)',
+                maxHeight: '90vh', overflowY: 'auto'
+              }}
+            >
+              <button 
+                onClick={() => setSelectedTask(null)}
+                style={{ 
+                  position: 'absolute', top: 20, right: 20, background: 'var(--bg-hover)', border: 'none', 
+                  width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  cursor: 'pointer', color: 'var(--text-muted)' 
+                }}
+              >
+                <X size={18} />
+              </button>
+              
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+                 <PriorityBadge priority={selectedTask.priority} />
+                 <span className="badge badge-neutral">{selectedTask.category}</span>
+                 {selectedTask.isRemote && <span className="badge badge-brand">Remote</span>}
+              </div>
+
+              <h2 style={{ fontSize: '1.6rem', fontWeight: 900, marginBottom: 12, letterSpacing: '-0.02em', lineHeight: 1.2 }}>
+                {selectedTask.aiSummary || selectedTask.description}
+              </h2>
+              
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: 1.6, marginBottom: 24 }}>
+                {selectedTask.description}
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 32 }}>
+                 <div className="glass-card" style={{ padding: 16, background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+                    <Users size={16} color="var(--brand-primary)" style={{ marginBottom: 8 }} />
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Required Squad</p>
+                    <p style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-primary)' }}>{selectedTask.currentVolunteers} / {selectedTask.requiredVolunteers}</p>
+                 </div>
+                 <div className="glass-card" style={{ padding: 16, background: 'var(--bg-elevated)', border: '1px solid var(--border-default)' }}>
+                    <AlertTriangle size={16} color="var(--brand-accent)" style={{ marginBottom: 8 }} />
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>Priority Level</p>
+                    <p style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--text-primary)', textTransform: 'capitalize' }}>{selectedTask.priority}</p>
+                 </div>
+              </div>
+
+              {!selectedTask.isRemote && (
+                 <div style={{ height: 200, borderRadius: 16, overflow: 'hidden', marginBottom: 32, border: '1px solid var(--border-subtle)' }}>
+                    <LiveMap 
+                      destinationCoords={selectedTask.location} 
+                      destinationName={selectedTask.aiSummary || "Mission Target"} 
+                      height="200px" 
+                    />
+                 </div>
+              )}
+
+              <button 
+                 className="btn btn-primary" 
+                 style={{ width: '100%', padding: '16px 0', fontSize: '1rem', fontWeight: 900, borderRadius: 'var(--radius-lg)' }}
+                 onClick={() => { handleAccept(selectedTask); setSelectedTask(null) }}
+                 disabled={accepting === selectedTask.id || !isPhoneVerified}
+              >
+                 {accepting === selectedTask.id ? 'Establishing Comm Link...' : 'Accept Mission & Deploy'} <Zap size={18} fill="white" style={{ marginLeft: 8 }} />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* BADGES */}
       <div style={{ marginTop: 80 }}>

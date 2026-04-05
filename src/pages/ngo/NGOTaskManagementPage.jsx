@@ -16,7 +16,9 @@ import {
   AlertTriangle,
   Navigation,
   ShieldCheck,
-  Video
+  Video,
+  Filter,
+  ArrowDownWideNarrow
 } from 'lucide-react'
 import useAuthStore from '../../store/useAuthStore.js'
 import { subscribeToNGOTasks, confirmTaskCompletion, reassignTask } from '../../services/taskService.js'
@@ -29,40 +31,7 @@ import LiveMap from '../../components/tracking/LiveMap.jsx'
 import ChatWindow from '../../components/communication/ChatWindow.jsx'
 import VoiceCallModal from '../../components/communication/VoiceCallModal.jsx'
 import CallPlayback from '../../components/communication/CallPlayback.jsx'
-
-function TaskRow({ task, onSelect, isSelected }) {
-  return (
-    <motion.div
-      whileHover={{ x: 4 }}
-      onClick={() => onSelect(task)}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '20px', borderRadius: '18px',
-        background: isSelected ? 'rgba(74,103,242,0.08)' : 'white',
-        border: '1px solid',
-        borderColor: isSelected ? 'var(--brand-primary)' : 'var(--border-subtle)',
-        cursor: 'pointer', transition: 'all 0.3s', gap: 16,
-        boxShadow: isSelected ? 'var(--shadow-md)' : 'none'
-      }}
-    >
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', marginBottom: 4 }} className="truncate">
-          {task.aiSummary || task.description}
-        </p>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            <Users size={12} /> {task.currentVolunteers}/{task.requiredVolunteers} Assigned
-          </div>
-          <PriorityBadge priority={task.priority} />
-        </div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-         <div className={`status-dot ${task.status === 'active' ? 'online' : 'away'}`} />
-         <span style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', color: 'var(--text-muted)' }}>{task.status?.replace('_', ' ')}</span>
-      </div>
-    </motion.div>
-  )
-}
+import TaskCard from '../../components/tasks/TaskCard.jsx'
 
 function StarRating({ value, onChange }) {
   return (
@@ -93,6 +62,7 @@ export default function NGOTaskManagementPage() {
   const [chatId, setChatId] = useState(null)
   const [ratings, setRatings] = useState({})
   const [callHistory, setCallHistory] = useState([])
+  const [sortType, setSortType] = useState('priority') // 'priority', 'newest', 'status'
 
   useEffect(() => {
     if (!user?.uid) return
@@ -151,26 +121,91 @@ export default function NGOTaskManagementPage() {
          </button>
       </div>
 
-      <div className={selectedTask ? "grid-task" : ""} style={{ display: selectedTask ? 'grid' : 'block', gap: 32 }}>
+      {/* SEARCH & FILTER BAR */}
+      <div style={{ display: 'flex', gap: 12, marginBottom: 32, alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          <ArrowDownWideNarrow size={16} /> Sort By
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { id: 'priority', label: 'Priority' },
+            { id: 'newest', label: 'Newest' },
+            { id: 'status', label: 'Status' }
+          ].map(opt => (
+            <button
+              key={opt.id}
+              onClick={() => setSortType(opt.id)}
+              className="btn btn-ghost"
+              style={{ 
+                padding: '6px 16px', 
+                height: 'auto', 
+                fontSize: '0.8rem', 
+                borderRadius: 'var(--radius-full)',
+                background: sortType === opt.id ? 'var(--brand-primary)' : 'transparent',
+                color: sortType === opt.id ? 'white' : 'var(--text-secondary)',
+                border: '1px solid',
+                borderColor: sortType === opt.id ? 'var(--brand-primary)' : 'var(--border-subtle)',
+                fontWeight: 700,
+                transition: 'all 0.2s'
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
          {/* Sidebar: Mission List */}
-         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+         <div className="grid-3" style={{ gap: 16 }}>
             {tasks.length === 0 ? (
-               <div className="glass-card" style={{ padding: 60, textAlign: 'center' }}>
+               <div className="glass-card" style={{ padding: 60, textAlign: 'center', gridColumn: selectedTask ? 'unset' : '1 / -1' }}>
                   <LayoutList size={48} color="var(--border-default)" style={{ marginBottom: 20 }} />
                   <p style={{ fontWeight: 700, color: 'var(--text-muted)' }}>No active deployments</p>
                </div>
             ) : (
-               tasks.map(t => <TaskRow key={t.id} task={t} onSelect={setSelectedTask} isSelected={selectedTask?.id === t.id} />)
+               [...tasks]
+                .sort((a, b) => {
+                  if (sortType === 'priority') {
+                    const weights = { high: 3, medium: 2, low: 1 }
+                    return (weights[b.priority] || 0) - (weights[a.priority] || 0)
+                  }
+                  if (sortType === 'newest') {
+                    const timeA = a.createdAt?.seconds || new Date(a.createdAt).getTime() || 0
+                    const timeB = b.createdAt?.seconds || new Date(b.createdAt).getTime() || 0
+                    return timeB - timeA
+                  }
+                  if (sortType === 'status') {
+                    const statusOrder = { active: 1, assigned: 2, completed: 3, resolved: 3 }
+                    return (statusOrder[a.status] || 99) - (statusOrder[b.status] || 99)
+                  }
+                  return 0
+                })
+                .map(t => <TaskCard key={t.id} task={t} onClick={setSelectedTask} isSelected={selectedTask?.id === t.id} />)
             )}
          </div>
 
          {/* Mission Control Panel */}
-         <AnimatePresence mode="wait">
+         <AnimatePresence>
            {selectedTask && (
-             <motion.div 
-               key={selectedTask.id} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }}
-               style={{ display: 'flex', flexDirection: 'column', gap: 24 }}
-             >
+             <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+               <motion.div 
+                 initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                 onClick={() => setSelectedTask(null)}
+                 style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+               />
+               <motion.div
+                 initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                 animate={{ opacity: 1, scale: 1, y: 0 }}
+                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                 className="glass-card"
+                 style={{ 
+                   position: 'relative', width: '100%', maxWidth: 700, padding: 32, 
+                   borderRadius: 'var(--radius-2xl)', zIndex: 1, border: '1px solid var(--border-subtle)',
+                   boxShadow: 'var(--shadow-xl)', background: 'var(--bg-base)',
+                   maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 24
+                 }}
+               >
                <div className="glass-card" style={{ padding: 32 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
                      <div>
@@ -262,7 +297,8 @@ export default function NGOTaskManagementPage() {
                      )}
                   </div>
                </div>
-             </motion.div>
+               </motion.div>
+             </div>
            )}
          </AnimatePresence>
       </div>

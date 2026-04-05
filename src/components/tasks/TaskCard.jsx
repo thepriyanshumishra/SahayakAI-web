@@ -4,7 +4,7 @@ import { MapPin, Users, Clock, Building2, ChevronRight, Zap } from 'lucide-react
 import PriorityBadge from '../common/PriorityBadge.jsx'
 import { formatDistance } from '../../utils/distance.js'
 
-function TaskCard({ task, userCoords, onClick, showAcceptButton = false, onAccept, accepting = false }) {
+function TaskCard({ task, userCoords, onClick, showAcceptButton = false, onAccept, accepting = false, isSelected = false }) {
   const distance = userCoords && task.location
     ? formatDistance(
         Math.sqrt(
@@ -30,7 +30,12 @@ function TaskCard({ task, userCoords, onClick, showAcceptButton = false, onAccep
         cursor: onClick ? 'pointer' : 'default',
         position: 'relative',
         overflow: 'hidden',
-        borderLeft: isHigh ? '4px solid var(--priority-high)' : '1px solid var(--border-subtle)'
+        background: isSelected ? 'rgba(74, 103, 242, 0.04)' : 'var(--bg-base)',
+        border: isSelected ? '1px solid var(--brand-primary)' : '1px solid var(--border-subtle)',
+        borderLeft: isSelected 
+            ? '4px solid var(--brand-primary)' 
+            : isHigh ? '4px solid var(--priority-high)' : '1px solid var(--border-subtle)',
+        boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-sm)'
       }}
       onClick={() => onClick?.(task)}
     >

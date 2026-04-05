@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Loader } from '@googlemaps/js-api-loader';
+import { getMapsLoader } from '../../config/maps.js';
 
 export default function TaskRadarMap({ tasks, userCoords, onMarkerClick }) {
   const mapRef = useRef(null);
@@ -10,10 +10,7 @@ export default function TaskRadarMap({ tasks, userCoords, onMarkerClick }) {
     if (!userCoords) return;
 
     const initMap = async () => {
-      const loader = new Loader({
-        apiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '',
-        version: 'weekly',
-      });
+      const loader = getMapsLoader();
 
       try {
         const { Map } = await loader.importLibrary('maps');

@@ -10,17 +10,20 @@ import {
   ArrowRight,
   TrendingUp,
   Activity,
-  ClipboardList
+  ClipboardList,
+  X
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import useAuthStore from '../../store/useAuthStore.js'
 import { subscribeToNGOTasks, sweepStaleAssignments } from '../../services/taskService.js'
 import TaskCard from '../../components/tasks/TaskCard.jsx'
+import LiveMap from '../../components/tracking/LiveMap.jsx'
 
 function NGODashboard() {
   const { profile, user } = useAuthStore()
   const navigate = useNavigate()
   const [tasks, setTasks] = useState([])
+  const [selectedTask, setSelectedTask] = useState(null)
 
   useEffect(() => {
     if (!user?.uid) return
@@ -137,16 +140,123 @@ function NGODashboard() {
       ) : (
         <div className="grid-3">
           <AnimatePresence>
-            {tasks.slice(0, 6).map((task, i) => (
-              <TaskCard 
-                key={task.id} 
-                task={task} 
-                onClick={() => navigate(`/ngo/tasks`)} 
-              />
-            ))}
+            {[...tasks]
+              .sort((a, b) => {
+                const weights = { high: 3, medium: 2, low: 1 }
+                const weightA = weights[a.priority] || 0
+                const weightB = weights[b.priority] || 0
+                return weightB - weightA
+              })
+              .slice(0, 6)
+              .map((task, i) => (
+                <TaskCard 
+                  key={task.id} 
+                  task={task} 
+                  onClick={() => setSelectedTask(task)} 
+                />
+              ))}
           </AnimatePresence>
         </div>
       )}
+
+      {/* TASK DETAILS MODAL */}
+      <AnimatePresence>
+        {selectedTask && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedTask(null)}
+              style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)' }}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="glass-card"
+              style={{ 
+                position: 'relative', width: '100%', maxWidth: 550, padding: 32, 
+                borderRadius: 'var(--radius-2xl)', zIndex: 1, border: '1px solid var(--border-subtle)',
+                boxShadow: 'var(--shadow-xl)',
+                background: 'var(--bg-base)',
+                maxHeight: '90vh',
+                overflowY: 'auto'
+              }}
+            >
+              <button 
+                onClick={() => setSelectedTask(null)}
+                style={{ 
+                  position: 'absolute', top: 20, right: 20, 
+                  background: 'var(--bg-hover)', border: 'none', 
+                  width: 32, height: 32, borderRadius: '50%', 
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                  cursor: 'pointer', color: 'var(--text-muted)' 
+                }}
+              >
+                <X size={18} />
+              </button>
+              
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 16 }}>
+                <span className="badge badge-neutral" style={{ background: 'var(--bg-elevated)', border: 'none' }}>
+                  {selectedTask.category || 'General Response'}
+                </span>
+                <div style={{ width: 6, height: 6, borderRadius: '50%', background: selectedTask.status === 'active' ? 'var(--priority-low)' : 'var(--text-muted)' }} />
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                  {selectedTask.status?.replace('_', ' ')}
+                </span>
+              </div>
+              
+              <h2 style={{ fontSize: '1.6rem', fontFamily: 'var(--font-display)', fontWeight: 800, marginBottom: 12, lineHeight: 1.2 }}>
+                {selectedTask.aiSummary || selectedTask.description?.slice(0, 60)}
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: 1.7, marginBottom: 24 }}>
+                {selectedTask.description}
+              </p>
+
+              {selectedTask.location && (
+                <div style={{ marginBottom: 24, borderRadius: 'var(--radius-xl)', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
+                  <LiveMap 
+                    destinationCoords={selectedTask.location} 
+                    destinationName={selectedTask.location.address}
+                    height="180px"
+                  />
+                </div>
+              )}
+              
+              <div className="grid-2" style={{ marginBottom: 32, gap: 20, padding: 20, background: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)' }}>
+                <div>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Location</p>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>{selectedTask.location?.address || 'Field Location'}</p>
+                </div>
+                <div>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Volunteers</p>
+                  <p style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                    {selectedTask.currentVolunteers || 0} deployed <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>/ {selectedTask.requiredVolunteers || 1} required</span>
+                  </p>
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: 12 }}>
+                <button 
+                  className="btn btn-ghost" 
+                  style={{ flex: 1, borderRadius: 'var(--radius-full)' }}
+                  onClick={() => setSelectedTask(null)}
+                >
+                  Close
+                </button>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ flex: 2, borderRadius: 'var(--radius-full)' }}
+                  onClick={() => navigate('/ngo/tasks')}
+                >
+                  Manage Mission <ArrowRight size={16} />
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
