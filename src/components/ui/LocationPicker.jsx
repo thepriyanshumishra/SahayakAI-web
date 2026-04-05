@@ -265,6 +265,15 @@ export default function LocationPicker({ value, onChange }) {
                 </button>
               )}
 
+              {/* API Blocked Warning */}
+              {mode === 'manual' && !window.google && (
+                <div style={{ marginTop: 8, padding: '8px 12px', borderRadius: 10, background: 'var(--priority-high-bg)', border: '1px solid var(--priority-high)' }}>
+                  <p style={{ fontSize: '0.72rem', color: 'var(--priority-high)', fontWeight: 600 }}>
+                    Map suggestions are blocked by your browser. Try disabling your AdBlocker or VPN for this site.
+                  </p>
+                </div>
+              )}
+
               {/* Suggestions Dropdown */}
               <AnimatePresence>
                 {showSuggestions && suggestions.length > 0 && (
