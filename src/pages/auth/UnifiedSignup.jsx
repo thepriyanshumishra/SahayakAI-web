@@ -20,8 +20,7 @@ import {
   createEmailUser,
   loginEmailUser,
   getUserProfile,
-  selectRole,
-  signOutUser
+  selectRole
 } from '../../services/authService.js'
 import PublicNavbar from '../../components/common/PublicNavbar.jsx'
 import usePersistentState from '../../hooks/usePersistentState.js'
