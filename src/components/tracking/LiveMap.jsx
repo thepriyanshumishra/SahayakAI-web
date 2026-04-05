@@ -61,11 +61,11 @@ export default function LiveMap({
         })
         volMkrRef.current = new markerLib.AdvancedMarkerElement({
           position: volunteerCoords, map,
-          content: pin.element,
+          content: pin,
           title: 'Volunteer',
         })
       }
-
+ 
       if (destinationCoords) {
         const pin = new markerLib.PinElement({
           background: '#FF4D4D',
@@ -74,7 +74,7 @@ export default function LiveMap({
         })
         destMkrRef.current = new markerLib.AdvancedMarkerElement({
           position: destinationCoords, map,
-          content: pin.element,
+          content: pin,
           title: 'Task Location',
         })
       }
