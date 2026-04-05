@@ -90,6 +90,8 @@ export default defineConfig({
     }
   },
   esbuild: {
-    drop: ['console', 'debugger'],
+    // Only strip debugger statements, not console calls (needed by Workbox SW)
+    drop: ['debugger'],
+    legalComments: 'none',
   }
 })

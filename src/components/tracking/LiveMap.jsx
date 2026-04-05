@@ -98,7 +98,7 @@ export default function LiveMap({
   // Update volunteer marker position live
   useEffect(() => {
     if (!gmapRef.current || !volunteerCoords || !window.google?.maps) return
-    if (volMkrRef.current) volMkrRef.current.setPosition(volunteerCoords)
+    if (volMkrRef.current) volMkrRef.current.position = volunteerCoords
     if (polyRef.current) polyRef.current.setPath([volunteerCoords, destinationCoords || volunteerCoords])
     gmapRef.current.panTo(volunteerCoords)
   }, [volunteerCoords, destinationCoords])
@@ -117,10 +117,10 @@ export default function LiveMap({
   return (
     <>
       {/* Map preview */}
-      <div style={{ borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
+      <div style={{ borderRadius: 16, overflow: 'hidden', position: 'relative', height }}>
         {mapError ? (
           <div style={{
-            height, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
             flexDirection: 'column', gap: 8,
             background: 'rgba(255,255,255,0.03)',
             border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16,
@@ -131,7 +131,7 @@ export default function LiveMap({
             </p>
           </div>
         ) : (
-          <div ref={mapRef} style={{ width: '100%', height }} id="live-map" />
+          <div ref={mapRef} style={{ width: '100%', height: '100%' }} id="live-map" />
         )}
 
         {/* ETA badge */}

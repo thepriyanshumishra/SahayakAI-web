@@ -229,8 +229,8 @@ export async function acceptTask(taskId) {
     startedAt: serverTimestamp(),
     completedAt: null,
     completionPhotoUrl: null,
-    taskLocation: task.location,
-    isRemote: task.isRemote,
+    taskLocation: task.location || null,
+    isRemote: Boolean(task.isRemote),
   })
 
   batch.update(taskRef, {
