@@ -5,24 +5,25 @@ import {
   Pencil, Sparkles, Droplets, UtensilsCrossed, HeartPulse, Home,
   GraduationCap, ShoppingBag, Zap, Globe, Users, CheckCircle2,
   MapPin, Navigation, ChevronRight, ChevronLeft, Rocket, Activity,
-  AlertTriangle, Wind, Loader2
+  AlertTriangle, Wind, Loader2, Brain
 } from 'lucide-react'
 import BackButton from '../../components/common/BackButton.jsx'
 import useAuthStore from '../../store/useAuthStore.js'
 import { createTask } from '../../services/taskService.js'
+import { analyzeMissionReport } from '../../services/groqMissionService.js'
 import useLocationStore from '../../store/useLocationStore.js'
 import useLocation from '../../hooks/useLocation.js'
 import DuplicateWarning from '../../components/tasks/DuplicateWarning.jsx'
 import AIChatInput from '../../components/ui/AIChatInput.jsx'
 import VoiceChat from '../../components/ui/VoiceChat.jsx'
-import { AnimatePresence as AP2 } from 'framer-motion'
+import AIQuestionFlow from '../../components/ui/AIQuestionFlow.jsx'
 
-// ─── Constants ───────────────────────────────────────────────
+// ─── Constants ────────────────────────────────────────────────
 const STEPS = ['How to Create', 'Category', 'Details', 'Location', 'Deploy']
-const AI_STEPS = ['How to Create', 'AI Chat', 'Location', 'Deploy']
+const AI_STEPS = ['How to Create', 'AI Chat', 'Review & Deploy']
 
 const CATEGORIES = [
-  { key: 'Flood Relief',       icon: Droplets,       color: '#3b82f6' },
+  { key: 'Flood Relief',       icon: Droplets,        color: '#3b82f6' },
   { key: 'Food Distribution',  icon: UtensilsCrossed, color: '#f59e0b' },
   { key: 'Medical Aid',        icon: HeartPulse,      color: '#ef4444' },
   { key: 'Shelter',            icon: Home,            color: '#8b5cf6' },
@@ -36,7 +37,7 @@ const CATEGORIES = [
 
 const EXPIRY_OPTS = [6, 12, 24, 48, 72]
 
-// ─── Step Progress Bar ────────────────────────────────────────
+// ─── Step Progress Bar ─────────────────────────────────────────
 function StepBar({ steps, current }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 40 }}>
@@ -48,7 +49,7 @@ function StepBar({ steps, current }) {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
               <div style={{
                 width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: done ? 'var(--brand-primary)' : active ? 'var(--brand-primary)' : 'var(--bg-hover)',
+                background: done || active ? 'var(--brand-primary)' : 'var(--bg-hover)',
                 border: `2px solid ${done || active ? 'var(--brand-primary)' : 'var(--border-subtle)'}`,
                 transition: 'all 0.3s',
               }}>
@@ -77,7 +78,7 @@ function StepBar({ steps, current }) {
   )
 }
 
-// ─── Nav Buttons ─────────────────────────────────────────────
+// ─── Nav Buttons ──────────────────────────────────────────────
 function NavRow({ onBack, onNext, nextLabel = 'Next', nextDisabled, loading }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 40 }}>
@@ -101,7 +102,7 @@ function NavRow({ onBack, onNext, nextLabel = 'Next', nextDisabled, loading }) {
   )
 }
 
-// ─── Slide wrapper ────────────────────────────────────────────
+// ─── Slide wrapper ─────────────────────────────────────────────
 function Slide({ children }) {
   return (
     <motion.div
@@ -115,52 +116,158 @@ function Slide({ children }) {
   )
 }
 
-// ─── Main Page ───────────────────────────────────────────────
+// ─── AI Analyzing Loader ───────────────────────────────────────
+function AnalyzingLoader({ message }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.95 }}
+      style={{ textAlign: 'center', padding: '60px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}
+    >
+      <div style={{ position: 'relative', width: 80, height: 80 }}>
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+          style={{
+            position: 'absolute', inset: 0, borderRadius: '50%',
+            border: '3px solid transparent',
+            borderTopColor: 'var(--brand-primary)',
+            borderRightColor: 'rgba(64,145,108,0.3)',
+          }}
+        />
+        <div style={{
+          position: 'absolute', inset: 12, borderRadius: '50%',
+          background: 'rgba(64,145,108,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <Brain size={24} color="var(--brand-primary)" />
+        </div>
+      </div>
+      <div>
+        <motion.p
+          animate={{ opacity: [1, 0.5, 1] }}
+          transition={{ duration: 1.8, repeat: Infinity }}
+          style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: 6 }}
+        >
+          {message || 'Analysing your report…'}
+        </motion.p>
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+          Groq AI is extracting mission details and preparing questions
+        </p>
+      </div>
+    </motion.div>
+  )
+}
+
+// ─── Main Page ────────────────────────────────────────────────
 export default function CreateTaskPage() {
   const { coords } = useLocationStore()
   const { requestLocation } = useLocation()
   const navigate = useNavigate()
 
-  const [mode, setMode] = useState(null)       // 'manual' | 'ai'
-  const [step, setStep] = useState(0)          // 0 = how to create
+  // Wizard state
+  const [mode, setMode]   = useState(null)    // 'manual' | 'ai'
+  const [step, setStep]   = useState(0)
+
+  // AI path state
+  const [aiPhase, setAiPhase]             = useState('chat')   // 'chat' | 'analyzing' | 'questions' | 'review'
+  const [chatValue, setChatValue]         = useState('')
+  const [groqData, setGroqData]           = useState(null)     // { extracted, questions }
+  const [questionAnswers, setQuestionAnswers] = useState({})
+  const [resolvedLocation, setResolvedLocation] = useState(null) // { address, lat, lng }
+  const [mediaFiles, setMediaFiles]       = useState([])
+
+  // Shared form state
   const [form, setForm] = useState({
     description: '', address: '', requiredVolunteers: 1,
     isRemote: false, expiryHours: 24, category: '',
   })
-  const [chatValue, setChatValue] = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-  const [aiResult, setAiResult] = useState(null)
+
+  // UI state
+  const [loading, setLoading]     = useState(false)
+  const [error, setError]         = useState(null)
+  const [aiResult, setAiResult]   = useState(null)
   const [duplicates, setDuplicates] = useState(null)
   const [createAnyway, setCreateAnyway] = useState(false)
   const [showVoice, setShowVoice] = useState(false)
 
   const up = (k, v) => setForm(f => ({ ...f, [k]: v }))
-
-  // Steps depend on mode
   const steps = mode === 'ai' ? AI_STEPS : STEPS
 
-  // Map step index to named stage
-  const stageName = steps[step] || ''
-
-  // ─── AI chat submit ──────────────────────────────────────
-  const handleAISubmit = (text) => {
+  // ── AI Chat Submit → Groq ──────────────────────────────────
+  const handleAISubmit = async (text) => {
+    if (!text.trim()) return
     up('description', text)
     setChatValue('')
-    setStep(2) // Jump to Location in AI flow
+    setAiPhase('analyzing')
+    setError(null)
+
+    try {
+      const data = await analyzeMissionReport(text)
+      setGroqData(data)
+
+      // Pre-fill form from extracted data
+      if (data.extracted?.category) up('category', data.extracted.category)
+      if (data.extracted?.volunteersNeeded) up('requiredVolunteers', data.extracted.volunteersNeeded)
+      if (data.extracted?.location) {
+        up('address', data.extracted.location)
+        setResolvedLocation({ address: data.extracted.location })
+      }
+
+      setAiPhase(data.questions?.length ? 'questions' : 'review')
+    } catch (e) {
+      console.error('Groq error:', e)
+      setError('AI analysis failed — you can still fill in details manually.')
+      setAiPhase('review')
+    }
   }
 
-  // ─── Final submit ────────────────────────────────────────
+  // ── AIQuestionFlow Complete ────────────────────────────────
+  const handleQuestionsComplete = ({ extracted, answers }) => {
+    setQuestionAnswers(answers)
+
+    // Apply location answer
+    const locAnswer = Object.values(answers).find(a => a?.type === 'location')
+    if (locAnswer?.address) {
+      setResolvedLocation({ address: locAnswer.address, lat: locAnswer.lat, lng: locAnswer.lng })
+      up('address', locAnswer.address)
+    }
+
+    // Apply media answer
+    const mediaAnswer = Object.values(answers).find(a => a?.type === 'media')
+    if (mediaAnswer?.files) setMediaFiles(mediaAnswer.files)
+
+    // Apply volunteers
+    const volAnswer = answers['volunteers'] || answers['responders']
+    if (volAnswer && !isNaN(parseInt(volAnswer))) up('requiredVolunteers', parseInt(volAnswer))
+
+    // Apply urgency/timeline → expiry hours
+    const timeAnswer = answers['timeline'] || answers['urgency'] || answers['timeframe']
+    if (timeAnswer) {
+      const lower = String(timeAnswer).toLowerCase()
+      if (lower.includes('2 hour') || lower.includes('urgent')) up('expiryHours', 6)
+      else if (lower.includes('today')) up('expiryHours', 12)
+      else if (lower.includes('3 day') || lower.includes('week')) up('expiryHours', 72)
+    }
+
+    setAiPhase('review')
+    setStep(2) // move to Review & Deploy in AI flow
+  }
+
+  // ── Final Deploy ───────────────────────────────────────────
   const handleDeploy = async () => {
     if (!form.description.trim()) return setError('Mission brief required')
     setError(null); setLoading(true)
     try {
+      const loc = resolvedLocation || (coords ? { lat: coords.lat, lng: coords.lng } : null)
       const result = await createTask({
         ...form,
-        location: coords
-          ? { ...coords, address: form.address || 'GPS COORDINATES' }
+        location: loc
+          ? { lat: loc.lat || 0, lng: loc.lng || 0, address: form.address || loc.address || 'GPS Location' }
           : { lat: 0, lng: 0, address: form.address || 'N/A' },
         forceCreate: createAnyway,
+        attachments: mediaFiles.length,
       })
       if (result.duplicateFound && !createAnyway) {
         setDuplicates({ found: true, task: result.existingTask })
@@ -172,7 +279,7 @@ export default function CreateTaskPage() {
     finally { setLoading(false) }
   }
 
-  // ─── Success screen ──────────────────────────────────────
+  // ─── Success Screen ────────────────────────────────────────
   if (aiResult) return (
     <div style={{ maxWidth: 560, margin: '120px auto', textAlign: 'center', padding: '0 20px' }}>
       <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 200 }}
@@ -181,7 +288,7 @@ export default function CreateTaskPage() {
       </motion.div>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
         <h1 style={{ fontSize: '2rem', fontWeight: 900, marginBottom: 8 }}>Mission Deployed</h1>
-        <p style={{ color: 'var(--text-secondary)', marginBottom: 36 }}>AI has categorized and broadcasted your mission to eligible volunteers.</p>
+        <p style={{ color: 'var(--text-secondary)', marginBottom: 36 }}>AI has categorised and broadcasted your mission to eligible volunteers.</p>
         <div className="glass-card" style={{ padding: 28, textAlign: 'left' }}>
           <div style={{ display: 'grid', gap: 20 }}>
             {[['Category', aiResult.category], ['Priority', aiResult.priority?.toUpperCase()], ['Brief', aiResult.summary]].map(([k, v]) => (
@@ -197,7 +304,7 @@ export default function CreateTaskPage() {
     </div>
   )
 
-  // ─── Duplicate warning ────────────────────────────────────
+  // ─── Duplicate Warning ─────────────────────────────────────
   if (duplicates?.found) return (
     <div style={{ maxWidth: 600, margin: '80px auto', padding: '0 20px' }}>
       <DuplicateWarning
@@ -217,8 +324,8 @@ export default function CreateTaskPage() {
             onClose={() => setShowVoice(false)}
             onTranscript={(text) => {
               if (text) {
-                if (mode === 'ai') { setChatValue(text) }
-                else { up('description', text) }
+                if (mode === 'ai') setChatValue(text)
+                else up('description', text)
               }
               setShowVoice(false)
             }}
@@ -238,21 +345,21 @@ export default function CreateTaskPage() {
           </div>
         </div>
 
-        {/* Progress */}
+        {/* Step Progress */}
         {mode && <StepBar steps={steps} current={step} />}
 
-        {/* Slide content */}
+        {/* Slide Content */}
         <AnimatePresence mode="wait">
 
-          {/* ── Step 0: How to create ── */}
+          {/* ── Step 0: How to Create ── */}
           {step === 0 && (
             <Slide key="s0">
               <p style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>How would you like to deploy this mission?</p>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 28 }}>Choose how you'd like to describe your mission.</p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 {[
-                  { key: 'manual', icon: Pencil, label: 'Fill Manually', desc: 'Step-by-step form — choose category, add details, set location.' },
-                  { key: 'ai', icon: Sparkles, label: 'Use SahayakAI', desc: 'Just describe the mission in plain words — AI fills everything for you.' },
+                  { key: 'manual', icon: Pencil,   label: 'Fill Manually',   desc: 'Step-by-step form — choose category, add details, set location.' },
+                  { key: 'ai',     icon: Sparkles,  label: 'Use SahayakAI',   desc: 'Just describe the mission in plain words — AI fills everything for you.' },
                 ].map(opt => (
                   <motion.button
                     key={opt.key}
@@ -310,33 +417,68 @@ export default function CreateTaskPage() {
                   )
                 })}
               </div>
-              <NavRow
-                onBack={() => setStep(0)}
-                onNext={() => setStep(2)}
-                nextDisabled={!form.category}
-              />
+              <NavRow onBack={() => setStep(0)} onNext={() => setStep(2)} nextDisabled={!form.category} />
             </Slide>
           )}
 
-          {/* ── Step 1 (AI): AI Chat ── */}
+          {/* ── Step 1 (AI): Chat + Groq flow ── */}
           {step === 1 && mode === 'ai' && (
             <Slide key="s1ai">
-              <div style={{ textAlign: 'center', marginBottom: 40 }}>
-                <div style={{ width: 56, height: 56, borderRadius: 18, background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                  <Sparkles size={26} color="var(--brand-primary)" />
-                </div>
-                <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 8 }}>What's the mission?</h2>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
-                  Describe the crisis in plain words — AI will categorize, prioritize, and brief the mission automatically.
-                </p>
-              </div>
-              <AIChatInput
-                value={chatValue}
-                onChange={setChatValue}
-                onSubmit={handleAISubmit}
-                onMicClick={() => setShowVoice(true)}
-              />
-              <NavRow onBack={() => setStep(0)} />
+              <AnimatePresence mode="wait">
+
+                {/* Chat Input */}
+                {aiPhase === 'chat' && (
+                  <motion.div key="chat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <div style={{ textAlign: 'center', marginBottom: 40 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: 18, background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                        <Sparkles size={26} color="var(--brand-primary)" />
+                      </div>
+                      <h2 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: 8 }}>What's the mission?</h2>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                        Describe the crisis in plain words — AI will ask follow-up questions to build the complete brief.
+                      </p>
+                    </div>
+                    <AIChatInput
+                      value={chatValue}
+                      onChange={setChatValue}
+                      onSubmit={handleAISubmit}
+                      onMicClick={() => setShowVoice(true)}
+                    />
+                    {error && (
+                      <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 12, background: 'var(--priority-high-bg)', border: '1px solid var(--priority-high)' }}>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--priority-high)', fontWeight: 600 }}>{error}</p>
+                      </div>
+                    )}
+                    <NavRow onBack={() => setStep(0)} />
+                  </motion.div>
+                )}
+
+                {/* Analysing Loader */}
+                {aiPhase === 'analyzing' && (
+                  <motion.div key="analyzing" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+                    <AnalyzingLoader />
+                  </motion.div>
+                )}
+
+                {/* Question Flow */}
+                {aiPhase === 'questions' && groqData && (
+                  <motion.div key="questions" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -16 }}>
+                    <div style={{ marginBottom: 32 }}>
+                      <p style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>A few quick questions</p>
+                      <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                        Answer these to help AI build the most accurate mission brief.
+                      </p>
+                    </div>
+                    <AIQuestionFlow
+                      questions={groqData.questions}
+                      extracted={groqData.extracted}
+                      onComplete={handleQuestionsComplete}
+                      onBack={() => setAiPhase('chat')}
+                    />
+                  </motion.div>
+                )}
+
+              </AnimatePresence>
             </Slide>
           )}
 
@@ -347,7 +489,6 @@ export default function CreateTaskPage() {
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 24 }}>Provide as much detail as possible — who, what, where, urgency.</p>
 
               <div className="glass-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
-                {/* Description */}
                 <div>
                   <label className="label" style={{ marginBottom: 6, display: 'block' }}>Mission Brief <span style={{ color: '#ef4444' }}>*</span></label>
                   <div style={{ position: 'relative' }}>
@@ -375,17 +516,17 @@ export default function CreateTaskPage() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 10, padding: '8px 12px', background: 'var(--bg-base)', borderRadius: 10, border: '1px solid var(--border-subtle)' }}>
                     <Sparkles size={13} color="var(--brand-primary)" />
-                    <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>AI will auto-assign priority. Category: <strong style={{ color: 'var(--brand-primary)' }}>{form.category}</strong></p>
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                      AI will auto-assign priority. Category: <strong style={{ color: 'var(--brand-primary)' }}>{form.category}</strong>
+                    </p>
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  {/* Volunteers */}
                   <div>
                     <label className="label" style={{ marginBottom: 6, display: 'block' }}>Responders Needed</label>
                     <input className="input" type="number" min={1} max={500} value={form.requiredVolunteers} onChange={e => up('requiredVolunteers', e.target.value)} />
                   </div>
-                  {/* Expiry */}
                   <div>
                     <label className="label" style={{ marginBottom: 6, display: 'block' }}>Mission Window</label>
                     <select className="input" value={form.expiryHours} onChange={e => up('expiryHours', e.target.value)}>
@@ -394,7 +535,6 @@ export default function CreateTaskPage() {
                   </div>
                 </div>
 
-                {/* Environment */}
                 <div>
                   <label className="label" style={{ marginBottom: 10, display: 'block' }}>Mission Environment</label>
                   <div style={{ display: 'flex', gap: 12 }}>
@@ -423,9 +563,9 @@ export default function CreateTaskPage() {
             </Slide>
           )}
 
-          {/* ── Step 2 (AI) = Step 3 (manual): Location ── */}
-          {((step === 2 && mode === 'ai') || (step === 3 && mode === 'manual')) && (
-            <Slide key="s-loc">
+          {/* ── Step 3 (manual): Location ── */}
+          {step === 3 && mode === 'manual' && (
+            <Slide key="s3m">
               <p style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>Where is this mission?</p>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 24 }}>Be as specific as possible — landmark, street, ward, or pin code.</p>
 
@@ -464,34 +604,63 @@ export default function CreateTaskPage() {
                 </div>
               </div>
               <NavRow
-                onBack={() => mode === 'ai' ? setStep(1) : setStep(2)}
-                onNext={() => mode === 'ai' ? setStep(3) : setStep(4)}
+                onBack={() => setStep(2)}
+                onNext={() => setStep(4)}
                 nextDisabled={!form.address.trim() && !coords}
               />
             </Slide>
           )}
 
-          {/* ── Final: Deploy (Review + Submit) ── */}
-          {((step === 3 && mode === 'ai') || (step === 4 && mode === 'manual')) && (
+          {/* ── Step 2 AI / Step 4 Manual: Review & Deploy ── */}
+          {((step === 2 && mode === 'ai') || (step === 4 && mode === 'manual')) && (
             <Slide key="s-deploy">
               <p style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>Review & Deploy Mission</p>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 24 }}>Verify the details before broadcasting to the volunteer network.</p>
 
-              <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div className="glass-card" style={{ padding: 28, display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {[
                   ['Mission Brief', form.description || '—'],
                   ['Category', form.category || 'Auto (AI)'],
                   ['Environment', form.isRemote ? 'Remote' : 'On-site'],
                   ['Responders', form.requiredVolunteers],
-                  ['Window', `${form.expiryHours} hours`],
+                  ['Window', `${form.expiryHours} Hours`],
                   ['Location', form.address || (coords ? `${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)}` : 'Not set')],
-                ].map(([k, v]) => (
-                  <div key={k} style={{ display: 'grid', gridTemplateColumns: '140px 1fr', gap: 8, borderBottom: '1px solid var(--border-subtle)', paddingBottom: 16 }}>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase' }}>{k}</p>
-                    <p style={{ fontSize: '0.88rem', fontWeight: 700 }}>{v}</p>
+                  ...(mediaFiles.length ? [['Attachments', `${mediaFiles.length} file${mediaFiles.length !== 1 ? 's' : ''}`]] : []),
+                ].map(([k, v], idx, arr) => (
+                  <div key={k} style={{
+                    display: 'grid', gridTemplateColumns: '130px 1fr', gap: 8, alignItems: 'start',
+                    padding: '14px 0',
+                    borderBottom: idx < arr.length - 1 ? '1px solid var(--border-subtle)' : 'none',
+                  }}>
+                    <p style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', paddingTop: 2 }}>{k}</p>
+                    <p style={{ fontSize: '0.88rem', fontWeight: 700, lineHeight: 1.5 }}>{v}</p>
                   </div>
                 ))}
               </div>
+
+              {/* AI question answers summary */}
+              {mode === 'ai' && Object.keys(questionAnswers).length > 0 && (
+                <div style={{ marginTop: 16, padding: '18px 20px', borderRadius: 16, background: 'rgba(64,145,108,0.05)', border: '1px solid rgba(64,145,108,0.2)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                    <Sparkles size={14} color="var(--brand-primary)" />
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--brand-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                      AI Q&A Summary
+                    </p>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {groqData?.questions?.map(q => {
+                      const ans = questionAnswers[q.id]
+                      if (!ans || ans?.type === 'location' || ans?.type === 'media') return null
+                      return (
+                        <div key={q.id} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', flex: '0 0 40%', lineHeight: 1.4 }}>{q.question}</p>
+                          <p style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.4 }}>{String(ans)}</p>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              )}
 
               {error && (
                 <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 12, background: 'var(--priority-high-bg)', border: '1px solid var(--priority-high)', display: 'flex', gap: 8 }}>
@@ -501,7 +670,7 @@ export default function CreateTaskPage() {
               )}
 
               <NavRow
-                onBack={() => mode === 'ai' ? setStep(2) : setStep(3)}
+                onBack={() => mode === 'ai' ? setStep(1) : setStep(3)}
                 onNext={handleDeploy}
                 nextLabel="Deploy Mission"
                 loading={loading}

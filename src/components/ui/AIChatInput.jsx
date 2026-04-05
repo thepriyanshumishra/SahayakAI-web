@@ -29,6 +29,7 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
   const [active, setActive] = useState(false)
   const [urgent, setUrgent] = useState(false)
   const wrapperRef = useRef(null)
+  const textareaRef = useRef(null)
 
   // Cycle placeholder
   useEffect(() => {
@@ -39,6 +40,15 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
     }, 3000)
     return () => clearInterval(id)
   }, [active, value])
+
+  // Auto-expand textarea height
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto'
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 240) // cap at 240px
+      textareaRef.current.style.height = `${newHeight}px`
+    }
+  }, [value, active])
 
   // Click outside to collapse
   useEffect(() => {
@@ -60,7 +70,8 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
     <motion.div
       ref={wrapperRef}
       onClick={() => setActive(true)}
-      animate={active || value ? { height: 120, boxShadow: '0 8px 32px rgba(0,0,0,0.12)' } : { height: 64, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      animate={active || value ? { minHeight: 120, height: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' } : { minHeight: 64, height: 64, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      layout
       transition={{ type: 'spring', stiffness: 120, damping: 18 }}
       style={{
         width: '100%',
@@ -72,23 +83,25 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
       }}
     >
       {/* Input Row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, padding: '10px 12px' }}>
         <button
           type="button"
-          style={{ padding: 10, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)' }}
+          style={{ padding: 10, marginBottom: 2, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)' }}
           title="Attach file"
         >
           <Paperclip size={18} />
         </button>
 
         {/* Text input with animated placeholder */}
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ flex: 1, position: 'relative', marginBottom: 6 }}>
           <textarea
+            ref={textareaRef}
             rows={1}
             value={value}
             onChange={e => onChange?.(e.target.value)}
             onFocus={() => setActive(true)}
             onKeyDown={handleKeyDown}
+            placeholder={active ? 'Type mission details...' : ''}
             style={{
               width: '100%',
               border: 'none',
@@ -102,11 +115,13 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
               zIndex: 1,
               lineHeight: 1.5,
               padding: '4px 0',
+              maxHeight: 240,
+              overflowY: 'auto',
             }}
           />
           {/* Animated placeholder */}
           {!active && !value && (
-            <div style={{ position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            <div style={{ position: 'absolute', left: 0, top: 4, pointerEvents: 'none', zIndex: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <AnimatePresence mode="wait">
                 {showPh && (
                   <motion.span
@@ -130,7 +145,7 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onMicClick?.() }}
-          style={{ padding: 10, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)' }}
+          style={{ padding: 10, marginBottom: 2, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)' }}
           title="Voice input"
         >
           <Mic size={18} />
@@ -140,7 +155,7 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
           type="button"
           onClick={(e) => { e.stopPropagation(); if (value.trim()) onSubmit?.(value, urgent) }}
           style={{
-            padding: 10, borderRadius: '50%', border: 'none', cursor: 'pointer',
+            padding: 10, marginBottom: 2, borderRadius: '50%', border: 'none', cursor: 'pointer',
             background: value.trim() ? 'var(--brand-primary)' : 'var(--bg-hover)',
             color: value.trim() ? '#fff' : 'var(--text-muted)',
             transition: 'all 0.2s',
