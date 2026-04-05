@@ -30,22 +30,44 @@ export default defineConfig({
         ]
       },
       workbox: {
-        // Caches the app shell and core assets to ensure it works entirely offline once loaded
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // CRITICAL: Immediately take control — prevents stale JS from old deploys
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
+        // Only cache app shell (html/css/img). JS chunks are hashed — let network serve them fresh.
+        globPatterns: ['**/*.{css,html,ico,png,svg,woff2}'],
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/_/, /\/[^/?]+\.[^/]+$/],
         runtimeCaching: [
+          // JS chunks - NetworkFirst so stale hashes never get served
+          {
+            urlPattern: /\/assets\/.*\.js$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'js-chunks',
+              expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 },
+              cacheableResponse: { statuses: [200] }
+            }
+          },
+          // Firebase Firestore
           {
             urlPattern: /^https:\/\/firestore\.googleapis\.com\/.*/i,
             handler: 'NetworkFirst',
             options: {
               cacheName: 'firebase-firestore-cache',
-              expiration: {
-                maxEntries: 500,
-                maxAgeSeconds: 60 * 60 * 24 * 7 // Keep for 7 days
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
+              expiration: { maxEntries: 500, maxAgeSeconds: 60 * 60 * 24 * 7 },
+              cacheableResponse: { statuses: [0, 200] }
             }
+          },
+          // Never cache Groq API calls
+          {
+            urlPattern: /^https:\/\/api\.groq\.com\/.*/i,
+            handler: 'NetworkOnly',
+          },
+          // Never cache Google Maps
+          {
+            urlPattern: /^https:\/\/maps\.googleapis\.com\/.*/i,
+            handler: 'NetworkOnly',
           }
         ]
       }

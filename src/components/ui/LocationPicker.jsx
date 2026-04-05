@@ -85,50 +85,61 @@ export default function LocationPicker({ value, onChange }) {
     }, 1000) // 1 second after typing stops
   }
 
-  const fetchSuggestions = (input) => {
-    if (!window.google?.maps?.places?.AutocompleteService) {
+  const fetchSuggestions = async (input) => {
+    // New Places API (March 2025+) — AutocompleteSuggestion
+    if (!window.google?.maps?.places?.AutocompleteSuggestion) {
       setLoadingSuggestions(false)
       return
     }
-    const service = new window.google.maps.places.AutocompleteService()
-    service.getPlacePredictions(
-      { input, componentRestrictions: { country: 'in' } },
-      (predictions, status) => {
-        setLoadingSuggestions(false)
-        if (status === window.google.maps.places.PlacesServiceStatus.OK && predictions) {
-          setSuggestions(predictions)
-          setShowSuggestions(true)
-        } else {
-          setSuggestions([])
-          setShowSuggestions(false)
-        }
+    try {
+      const { suggestions } = await window.google.maps.places.AutocompleteSuggestion.fetchAutocompleteSuggestions({
+        input,
+        includedRegionCodes: ['in'],
+      })
+      setLoadingSuggestions(false)
+      if (suggestions?.length) {
+        // Map to shape compatible with our existing renderer
+        const mapped = suggestions.map(s => ({
+          place_id: s.placePrediction?.placeId,
+          description: s.placePrediction?.text?.text || '',
+          structured_formatting: {
+            main_text: s.placePrediction?.mainText?.text || '',
+            secondary_text: s.placePrediction?.secondaryText?.text || '',
+          },
+          _raw: s,
+        }))
+        setSuggestions(mapped)
+        setShowSuggestions(true)
+      } else {
+        setSuggestions([])
+        setShowSuggestions(false)
       }
-    )
+    } catch (e) {
+      console.warn('Places autocomplete error:', e)
+      setLoadingSuggestions(false)
+      setSuggestions([])
+    }
   }
 
-  const selectSuggestion = (prediction) => {
+  const selectSuggestion = async (prediction) => {
     const address = prediction.description
     setQuery(address)
     setSuggestions([])
     setShowSuggestions(false)
 
-    // Optionally resolve to lat/lng
-    if (window.google?.maps?.places?.PlacesService) {
-      const tempDiv = document.createElement('div')
-      const placesService = new window.google.maps.places.PlacesService(tempDiv)
-      placesService.getDetails(
-        { placeId: prediction.place_id, fields: ['geometry'] },
-        (place, status) => {
-          if (status === 'OK' && place?.geometry?.location) {
-            const lat = place.geometry.location.lat()
-            const lng = place.geometry.location.lng()
-            onChange?.({ address, lat, lng })
-          } else {
-            onChange?.({ address })
-          }
-        }
-      )
-    } else {
+    // New Places API — resolve lat/lng via Place.fetchFields
+    try {
+      if (window.google?.maps?.places?.Place && prediction.place_id) {
+        const place = new window.google.maps.places.Place({ id: prediction.place_id })
+        await place.fetchFields({ fields: ['location'] })
+        const lat = place.location?.lat?.() ?? null
+        const lng = place.location?.lng?.() ?? null
+        onChange?.({ address, lat, lng })
+      } else {
+        onChange?.({ address })
+      }
+    } catch (e) {
+      console.warn('Place details error:', e)
       onChange?.({ address })
     }
     setMode('idle')
