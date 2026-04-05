@@ -1733,3 +1733,281 @@ textarea.input {
   color: #fff !important;
   border-color: var(--brand-primary) !important;
 }
+
+/* ══════════════════════════════════════════════
+   MOBILE-FIRST RESPONSIVE OVERRIDES
+   Comprehensive coverage for all pages/components
+══════════════════════════════════════════════ */
+
+/* ── Chat Screen (CreateTaskPage AI phase) ── */
+.chat-wrapper {
+  width: 100%;
+  padding: 0;
+}
+
+/* ── VoiceChat modal ── */
+.voice-modal-inner {
+  width: min(520px, calc(100vw - 32px));
+  border-radius: 28px;
+  padding: 40px 32px;
+}
+
+/* ── NGOPendingPage logout button ──  */
+@media (max-width: 480px) {
+  /* Logout btn on pending page — smaller and stays within bounds */
+  [style*="position: absolute"][style*="top: 32"] {
+    top: 16px !important;
+    right: 16px !important;
+    padding: 10px 14px !important;
+    font-size: 0.8rem !important;
+  }
+}
+
+/* ── Main 768px breakpoint ── */
+@media (max-width: 768px) {
+
+  /* ---- Page shell ---- */
+  .page-content {
+    padding: 16px 16px 80px !important;
+  }
+
+  /* Max-width containers used in various pages */
+  [style*="maxWidth: 680"],
+  [style*="maxWidth: 640"],
+  [style*="maxWidth: 560"],
+  [style*="maxWidth: 600"] {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+
+  /* ---- NGO Dashboard ---- */
+  .dash-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+
+  .dash-header-row button,
+  .dash-header-row > *:last-child {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  /* ---- CreateTaskPage ---- */
+
+  /* Mode selection: 2 cards → 1 column on mobile */
+  .mode-select-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* StepBar — reduce font/circle size so it doesn't overflow */
+  .step-bar-label {
+    font-size: 0.55rem !important;
+    max-width: 54px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* NavRow buttons — side by side but don't overflow */
+  .nav-row {
+    gap: 12px !important;
+    margin-top: 24px !important;
+  }
+
+  .nav-row button {
+    flex: 1 !important;
+    justify-content: center !important;
+    min-width: 0 !important;
+  }
+
+  /* Details form — 2-col → 1-col */
+  .details-grid-2 {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Review grid: label+value → full width stack */
+  .review-row {
+    grid-template-columns: 1fr !important;
+    gap: 2px !important;
+  }
+
+  /* ---- AIChatInput ---- */
+  .ai-chat-expanded-footer {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 8px !important;
+    padding: 0 12px 12px !important;
+  }
+
+  .ai-chat-expanded-footer span {
+    font-size: 0.68rem !important;
+  }
+
+  /* ---- VoiceChat modal ---- */
+  .voice-modal-inner {
+    border-radius: 20px !important;
+    padding: 28px 20px !important;
+  }
+
+  /* ---- NGO Pending Page ---- */
+  .ngo-pending-title {
+    font-size: 2.4rem !important;
+  }
+
+  /* ---- NGO Management (Admin) ---- */
+  .ngo-stats-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .ngo-management-container {
+    padding: 0 !important;
+  }
+
+  /* ---- Chat bubble max-width ---- */
+  .message-bubble {
+    max-width: 88% !important;
+  }
+
+  /* ---- Chat input area ---- */
+  .chat-input-area {
+    padding: 12px !important;
+    gap: 8px !important;
+  }
+
+  /* ---- Modal overlay ---- */
+  .modal-content {
+    padding: 20px 16px !important;
+    border-radius: 20px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* ---- Toast position ---- */
+  .toast-container,
+  #toast-root {
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+  }
+
+  /* Dropdown menu full width on mobile */
+  .dropdown-menu {
+    left: 12px !important;
+    right: 12px !important;
+    width: auto !important;
+  }
+
+  /* ---- AI Question Flow ---- */
+  .ai-question-suggestions {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
+
+  /* ---- LocationPicker ---- */
+  .location-gps-confirm-btns {
+    flex-direction: column !important;
+  }
+
+  /* ---- Review Drawer (Admin) ---- */
+  .review-drawer-content {
+    padding: 20px 16px !important;
+    border-radius: 20px !important;
+    max-height: 90vh !important;
+    overflow-y: auto !important;
+  }
+
+  /* ---- Verification banner ---- */
+  .verification-banner {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+
+  /* ---- Category Grid (CreateTask manual) ---- */
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+  }
+
+  /* ---- Sidebar footer status/text ---- */
+  .sidebar-footer-name {
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+/* ── Extra small (< 480px) ── */
+@media (max-width: 480px) {
+
+  /* ---- NGO pending page ---- */
+  .ngo-pending-title {
+    font-size: 1.9rem !important;
+    letter-spacing: -0.02em !important;
+  }
+
+  /* ---- Stats grid → 1 col ---- */
+  .ngo-stats-grid {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  /* ---- CreateTask: mode select padding ---- */
+  .mode-card-inner {
+    padding: 20px 16px !important;
+  }
+
+  /* Review table: tighter */
+  .review-row {
+    padding: 10px 0 !important;
+  }
+
+  /* ---- AIChatInput ---- */
+  /* Full-width pill on very small screens */
+  .ai-chat-urgent-btn span {
+    display: none !important;
+  }
+
+  /* ---- Step bar labels — hide on very small ---- */
+  .step-bar-label {
+    display: none !important;
+  }
+
+  /* ---- Category grid — 2 per row minimum ---- */
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  /* ---- Buttons full width in auth pages ---- */
+  .auth-btn-row {
+    flex-direction: column !important;
+  }
+
+  .auth-btn-row > * {
+    width: 100% !important;
+  }
+
+  /* ---- VoiceChat waveform: smaller ---- */
+  .voice-waveform-bar {
+    width: 3px !important;
+  }
+}
+
+/* ── Touch targets — always 44px min ── */
+button, [role="button"], a {
+  min-height: var(--touch-target, 36px);
+}
+
+@media (max-width: 768px) {
+  :root {
+    --touch-target: 44px;
+  }
+}
+
+/* ── Prevent horizontal scroll globally ── */
+html, body, #root {
+  max-width: 100vw;
+  overflow-x: hidden;
+}

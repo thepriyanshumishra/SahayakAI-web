@@ -1,149 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { loadGoogleMaps } from '../../config/maps.js'
+import { useNavigate } from 'react-router-dom'
+import { getMapsLoader } from '../../config/maps.js'
+import { Maximize2 } from 'lucide-react'
 
-/**
- * LiveMap — shows volunteer's moving marker, route polyline, ETA
- * Only renders for physical tasks
- *
- * Props:
- * - volunteerCoords: { lat, lng } — updates in real-time
- * - destinationCoords: { lat, lng } — task location
- * - eta: string — e.g. "~12 min"
- * - height: string (CSS)
- */
-function LiveMap({ volunteerCoords, destinationCoords, eta, height = '400px' }) {
-  const mapRef = useRef(null)
-  const googleMapRef = useRef(null)
-  const markerRef = useRef(null)
-  const polylineRef = useRef(null)
-  const destMarkerRef = useRef(null)
-  const [mapError, setMapError] = useState(null)
-
-  // Init map
-  useEffect(() => {
-    let mounted = true
-    loadGoogleMaps()
-      .then(({ Map, Marker, Polyline, SymbolPath }) => {
-        if (!mounted || !mapRef.current) return
-        const center = volunteerCoords || destinationCoords || { lat: 20.5937, lng: 78.9629 }
-
-        const map = new Map(mapRef.current, {
-          center,
-          zoom: 14,
-          mapTypeId: 'roadmap',
-          styles: DARK_MAP_STYLE,
-          disableDefaultUI: false,
-          zoomControl: true,
-          streetViewControl: false,
-          mapTypeControl: false,
-        })
-        googleMapRef.current = map
-
-        // Volunteer marker (moving dot)
-        if (volunteerCoords) {
-          markerRef.current = new Marker({
-            position: volunteerCoords,
-            map,
-            icon: {
-              path: SymbolPath.CIRCLE,
-              scale: 10,
-              fillColor: '#6C63FF',
-              fillOpacity: 1,
-              strokeColor: '#fff',
-              strokeWeight: 2,
-            },
-            title: 'Volunteer',
-          })
-        }
-
-        // Destination marker
-        if (destinationCoords) {
-          destMarkerRef.current = new Marker({
-            position: destinationCoords,
-            map,
-            icon: {
-              path: SymbolPath.CIRCLE,
-              scale: 12,
-              fillColor: '#FF4D4D',
-              fillOpacity: 1,
-              strokeColor: '#fff',
-              strokeWeight: 2,
-            },
-            title: 'Task Location',
-          })
-        }
-
-        // Polyline between them
-        if (volunteerCoords && destinationCoords) {
-          polylineRef.current = new Polyline({
-            path: [volunteerCoords, destinationCoords],
-            geodesic: true,
-            strokeColor: '#6C63FF',
-            strokeOpacity: 0.8,
-            strokeWeight: 3,
-            map,
-          })
-        }
-      })
-      .catch((e) => {
-        setMapError('Maps unavailable. Check your API key.')
-        console.error(e)
-      })
-
-    return () => { mounted = false }
-  }, []) // only init once
-
-  // Update volunteer marker position when coords change
-  useEffect(() => {
-    if (!markerRef.current || !volunteerCoords) return
-    markerRef.current.setPosition(volunteerCoords)
-    if (polylineRef.current) {
-      polylineRef.current.setPath([
-        volunteerCoords,
-        destinationCoords || volunteerCoords,
-      ])
-    }
-    // Pan map smoothly
-    if (googleMapRef.current) {
-      googleMapRef.current.panTo(volunteerCoords)
-    }
-  }, [volunteerCoords, destinationCoords])
-
-  if (mapError) {
-    return (
-      <div className="map-container" style={{ height, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 8 }}>
-        <span style={{ fontSize: 32 }}>🗺️</span>
-        <p className="text-sm text-muted">{mapError}</p>
-      </div>
-    )
-  }
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <div ref={mapRef} className="map-container" style={{ height }} id="live-map" />
-      {eta && (
-        <div style={{
-          position: 'absolute',
-          bottom: 16, left: '50%', transform: 'translateX(-50%)',
-          background: 'var(--bg-elevated)',
-          border: '1px solid var(--border-default)',
-          borderRadius: 'var(--radius-full)',
-          padding: '6px 16px',
-          fontSize: 'var(--text-sm)',
-          fontWeight: 600,
-          color: 'var(--text-primary)',
-          boxShadow: 'var(--shadow-md)',
-          display: 'flex', gap: 6, alignItems: 'center',
-        }}>
-          <span>🕐</span> ETA: {eta}
-        </div>
-      )}
-    </div>
-  )
-}
-
-// Google Maps dark style
-const DARK_MAP_STYLE = [
+const DARK_STYLE = [
   { elementType: 'geometry', stylers: [{ color: '#1d1f27' }] },
   { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
   { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
@@ -153,4 +13,165 @@ const DARK_MAP_STYLE = [
   { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#1e2535' }] },
 ]
 
-export default LiveMap
+export default function LiveMap({
+  volunteerCoords,
+  destinationCoords,
+  destinationName = '',
+  originName = '',
+  eta,
+  height = '260px',
+}) {
+  const navigate   = useNavigate()
+  const mapRef     = useRef(null)
+  const gmapRef    = useRef(null)
+  const volMkrRef  = useRef(null)
+  const destMkrRef = useRef(null)
+  const polyRef    = useRef(null)
+  const [mapError, setMapError] = useState(null)
+
+  useEffect(() => {
+    let alive = true
+    const init = async () => {
+      const loader = getMapsLoader()
+      const [mapsLib, markerLib] = await Promise.all([
+        loader.importLibrary('maps'),
+        loader.importLibrary('marker')
+      ])
+      
+      if (!alive || !mapRef.current) return
+
+      const g      = window.google.maps
+      const center = volunteerCoords || destinationCoords || { lat: 20.5937, lng: 78.9629 }
+
+      const map = new mapsLib.Map(mapRef.current, {
+        center, zoom: 14,
+        mapId: import.meta.env.VITE_GOOGLE_MAPS_ID || 'DEMO_MAP_ID',
+        disableDefaultUI: false,
+        zoomControl: true,
+        streetViewControl: false,
+        mapTypeControl: false,
+      })
+      gmapRef.current = map
+
+      if (volunteerCoords) {
+        const pin = new markerLib.PinElement({
+          background: '#6C63FF',
+          borderColor: '#ffffff',
+          glyphColor: '#ffffff'
+        })
+        volMkrRef.current = new markerLib.AdvancedMarkerElement({
+          position: volunteerCoords, map,
+          content: pin.element,
+          title: 'Volunteer',
+        })
+      }
+
+      if (destinationCoords) {
+        const pin = new markerLib.PinElement({
+          background: '#FF4D4D',
+          borderColor: '#ffffff',
+          glyphColor: '#ffffff'
+        })
+        destMkrRef.current = new markerLib.AdvancedMarkerElement({
+          position: destinationCoords, map,
+          content: pin.element,
+          title: 'Task Location',
+        })
+      }
+
+      if (volunteerCoords && destinationCoords) {
+        polyRef.current = new g.Polyline({
+          path: [volunteerCoords, destinationCoords],
+          geodesic: true, strokeColor: '#6C63FF', strokeOpacity: 0.8, strokeWeight: 3, map,
+        })
+      }
+    }
+
+    init().catch(e => {
+      console.error('[LiveMap]', e)
+      setMapError('Map preview unavailable — tap "Open Full Map" below for navigation.')
+    })
+
+    return () => { alive = false }
+  }, [])
+
+  // Update volunteer marker position live
+  useEffect(() => {
+    if (!gmapRef.current || !volunteerCoords || !window.google?.maps) return
+    if (volMkrRef.current) volMkrRef.current.setPosition(volunteerCoords)
+    if (polyRef.current) polyRef.current.setPath([volunteerCoords, destinationCoords || volunteerCoords])
+    gmapRef.current.panTo(volunteerCoords)
+  }, [volunteerCoords, destinationCoords])
+
+  const openFullMap = () => {
+    navigate('/map', {
+      state: {
+        destinationName,
+        destinationCoords,
+        originName,
+        originCoords: volunteerCoords || null,
+      },
+    })
+  }
+
+  return (
+    <>
+      {/* Map preview */}
+      <div style={{ borderRadius: 16, overflow: 'hidden', position: 'relative' }}>
+        {mapError ? (
+          <div style={{
+            height, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexDirection: 'column', gap: 8,
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.06)', borderRadius: 16,
+          }}>
+            <span style={{ fontSize: 28 }}>🗺️</span>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '0 20px' }}>
+              {mapError}
+            </p>
+          </div>
+        ) : (
+          <div ref={mapRef} style={{ width: '100%', height }} id="live-map" />
+        )}
+
+        {/* ETA badge */}
+        {eta && (
+          <div style={{
+            position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
+            background: 'rgba(10,13,20,0.85)', backdropFilter: 'blur(8px)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 20, padding: '5px 14px',
+            fontSize: '0.75rem', fontWeight: 700, color: '#fff',
+            display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap',
+          }}>
+            🕐 ETA: {eta}
+          </div>
+        )}
+      </div>
+
+      {/* Open Full Map button */}
+      <button
+        onClick={openFullMap}
+        style={{
+          width: '100%', marginTop: 10, padding: '13px',
+          borderRadius: 14, border: '1.5px solid rgba(74,103,242,0.35)',
+          background: 'linear-gradient(135deg,rgba(74,103,242,0.1),rgba(108,138,255,0.06))',
+          color: '#6c8aff', fontWeight: 800, fontSize: '0.85rem',
+          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+          transition: 'all 0.18s',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'rgba(74,103,242,0.18)'
+          e.currentTarget.style.borderColor = '#6c8aff'
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'linear-gradient(135deg,rgba(74,103,242,0.1),rgba(108,138,255,0.06))'
+          e.currentTarget.style.borderColor = 'rgba(74,103,242,0.35)'
+        }}
+      >
+        <Maximize2 size={15} />
+        Open Full Map — Get Directions
+      </button>
+    </>
+  )
+}

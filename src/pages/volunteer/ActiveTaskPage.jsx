@@ -133,7 +133,7 @@ export default function ActiveTaskPage() {
                    ))}
                 </div>
                 <div style={{ padding: 24, minHeight: 400 }}>
-                   {activeTab === 'map' && <LiveMap volunteerCoords={coords} destinationCoords={assignment.taskLocation} eta={eta} height="400px" />}
+                   {activeTab === 'map' && <LiveMap volunteerCoords={coords} destinationCoords={assignment.taskLocation} destinationName={enrichedTask?.title || enrichedTask?.aiSummary || 'Task Location'} originName="My Location" eta={eta} height="340px" />}
                    {activeTab === 'chat' && chatId && <div style={{ height: 440 }}><ChatWindow chatId={chatId} currentUserId={user?.uid} partnerName="Mission Command" /></div>}
                    {activeTab === 'call' && (
                       <div style={{ textAlign: 'center', padding: 60 }}>

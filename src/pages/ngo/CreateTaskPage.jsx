@@ -17,6 +17,7 @@ import DuplicateWarning from '../../components/tasks/DuplicateWarning.jsx'
 import AIChatInput from '../../components/ui/AIChatInput.jsx'
 import VoiceChat from '../../components/ui/VoiceChat.jsx'
 import AIQuestionFlow from '../../components/ui/AIQuestionFlow.jsx'
+import { ShieldAlert, Mail } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────
 const STEPS = ['How to Create', 'Category', 'Details', 'Location', 'Deploy']
@@ -81,7 +82,7 @@ function StepBar({ steps, current }) {
 // ─── Nav Buttons ──────────────────────────────────────────────
 function NavRow({ onBack, onNext, nextLabel = 'Next', nextDisabled, loading }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 40 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 32, gap: 12, flexWrap: 'wrap' }} className="nav-row">
       {onBack
         ? <button className="btn btn-secondary" onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px' }}>
             <ChevronLeft size={16} /> Back
@@ -162,9 +163,11 @@ function AnalyzingLoader({ message }) {
 
 // ─── Main Page ────────────────────────────────────────────────
 export default function CreateTaskPage() {
+  const { profile } = useAuthStore()
+  const isNGOPending = profile?.verificationStatus === 'pending'
+  const navigate = useNavigate()
   const { coords } = useLocationStore()
   const { requestLocation } = useLocation()
-  const navigate = useNavigate()
 
   // Wizard state
   const [mode, setMode]   = useState(null)    // 'manual' | 'ai'
@@ -278,6 +281,61 @@ export default function CreateTaskPage() {
     } catch (e) { setError(e.message) }
     finally { setLoading(false) }
   }
+  // ─── Pending State Guard ───────────────────────────────────
+  if (isNGOPending) return (
+    <div style={{ maxWidth: 580, margin: '140px auto', padding: '0 24px', textAlign: 'center' }}>
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        style={{
+          background: 'rgba(239, 68, 68, 0.05)',
+          border: '1px solid rgba(239, 68, 68, 0.1)',
+          borderRadius: 32,
+          padding: '60px 40px',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.05)'
+        }}
+      >
+        <div style={{
+          width: 80, height: 80, background: '#ef4444', borderRadius: 24,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          margin: '0 auto 32px', boxShadow: '0 12px 30px rgba(239, 68, 68, 0.3)'
+        }}>
+          <ShieldAlert size={40} color="#fff" />
+        </div>
+        
+        <h1 style={{ fontSize: '2rem', fontWeight: 900, color: 'var(--text-primary)', marginBottom: 16, letterSpacing: '-0.02em' }}>
+          Verification Required
+        </h1>
+        
+        <p style={{ fontSize: '1.05rem', lineHeight: 1.6, color: 'var(--text-secondary)', marginBottom: 40 }}>
+          Your NGO profile is currently under review by our system administrators.
+          You'll be able to create and manage tasks as soon as your identity is verified.
+        </p>
+
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => window.location.href = 'mailto:verification@sahayakai.com?subject=NGO Verification Inquiry: ' + profile?.displayName}
+            style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 28px', background: 'var(--text-primary)' }}
+          >
+            <Mail size={18} /> Contact System Admin
+          </button>
+          
+          <button
+            className="btn btn-secondary"
+            onClick={() => navigate('/ngo')}
+            style={{ padding: '14px 28px' }}
+          >
+            Back to Dashboard
+          </button>
+        </div>
+        
+        <p style={{ marginTop: 48, fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+          ESTIMATED REVIEW TIME: 24-48 HOURS
+        </p>
+      </motion.div>
+    </div>
+  )
 
   // ─── Success Screen ────────────────────────────────────────
   if (aiResult) return (
@@ -333,7 +391,7 @@ export default function CreateTaskPage() {
         )}
       </AnimatePresence>
 
-      <div style={{ maxWidth: 680, margin: '0 auto', padding: '40px 20px 80px' }}>
+      <div style={{ maxWidth: 680, margin: '0 auto', padding: '24px 16px 80px' }}>
         {/* Header */}
         <div style={{ marginBottom: 36, display: 'flex', alignItems: 'flex-start', gap: 16 }}>
           <BackButton />
@@ -356,7 +414,7 @@ export default function CreateTaskPage() {
             <Slide key="s0">
               <p style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>How would you like to deploy this mission?</p>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 28 }}>Choose how you'd like to describe your mission.</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="mode-select-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 {[
                   { key: 'manual', icon: Pencil,   label: 'Fill Manually',   desc: 'Step-by-step form — choose category, add details, set location.' },
                   { key: 'ai',     icon: Sparkles,  label: 'Use SahayakAI',   desc: 'Just describe the mission in plain words — AI fills everything for you.' },
@@ -367,7 +425,7 @@ export default function CreateTaskPage() {
                     whileTap={{ scale: 0.97 }}
                     onClick={() => { setMode(opt.key); setStep(1) }}
                     style={{
-                      padding: '32px 24px', borderRadius: 20,
+                    padding: '28px 20px', borderRadius: 20,
                       border: `2px solid ${mode === opt.key ? 'var(--brand-primary)' : 'var(--border-subtle)'}`,
                       background: '#fff', textAlign: 'center', cursor: 'pointer',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14,
@@ -392,7 +450,7 @@ export default function CreateTaskPage() {
             <Slide key="s1m">
               <p style={{ fontSize: '1.1rem', fontWeight: 800, marginBottom: 6 }}>What type of mission is this?</p>
               <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 24 }}>Select the primary category for this deployment.</p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
+              <div className="category-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 12 }}>
                 {CATEGORIES.map(cat => {
                   const active = form.category === cat.key
                   return (
@@ -417,7 +475,7 @@ export default function CreateTaskPage() {
                   )
                 })}
               </div>
-              <NavRow onBack={() => setStep(0)} onNext={() => setStep(2)} nextDisabled={!form.category} />
+              <NavRow onBack={() => setStep(0)} onNext={() => setStep(2)} nextDisabled={!form.category} className="nav-row" />
             </Slide>
           )}
 
@@ -522,7 +580,7 @@ export default function CreateTaskPage() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div className="details-grid-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div>
                     <label className="label" style={{ marginBottom: 6, display: 'block' }}>Responders Needed</label>
                     <input className="input" type="number" min={1} max={500} value={form.requiredVolunteers} onChange={e => up('requiredVolunteers', e.target.value)} />

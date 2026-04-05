@@ -240,7 +240,7 @@ export default function NGOTaskManagementPage() {
 
                   <div style={{ padding: 24, minHeight: 400 }}>
                      {activeView === 'map' && (
-                        <LiveMap volunteerCoords={activeAssignment?.liveLocation} destinationCoords={selectedTask.location} height="350px" />
+                        <LiveMap volunteerCoords={activeAssignment?.liveLocation} destinationCoords={selectedTask.location} destinationName={selectedTask.aiSummary || "Task Location"} originName="Volunteer" height="310px" />
                      )}
                      {activeView === 'chat' && activeAssignment && chatId && (
                         <div style={{ height: 380 }}>

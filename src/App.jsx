@@ -39,7 +39,8 @@ const NGOTaskManagementPage = React.lazy(() => import('./pages/ngo/NGOTaskManage
 
 // Pages — Admin (Lazy loaded)
 const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard.jsx'))
-const NGOReviewPage = React.lazy(() => import('./pages/admin/NGOReviewPage.jsx'))
+const NGOReviewPage  = React.lazy(() => import('./pages/admin/NGOReviewPage.jsx'))
+const FullMapPage    = React.lazy(() => import('./pages/tracking/FullMapPage.jsx'))
 
 /**
  * AppShell — sidebar + navbar layout for authenticated pages
@@ -164,6 +165,13 @@ function App() {
               <Route path="/ngo/tasks" element={
                 <ProtectedRoute requiredRole="ngo" requireVerified>
                   <AppShell><NGOTaskManagementPage /></AppShell>
+                </ProtectedRoute>
+              } />
+
+              {/* ── Full Map (both roles) ─────────────────────── */}
+              <Route path="/map" element={
+                <ProtectedRoute>
+                  <FullMapPage />
                 </ProtectedRoute>
               } />
 

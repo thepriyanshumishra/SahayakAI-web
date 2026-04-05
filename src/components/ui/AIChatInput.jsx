@@ -174,10 +174,12 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
         }}
         initial="hidden"
         animate={active || value ? 'visible' : 'hidden'}
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px 12px' }}
+        className="ai-chat-expanded-footer"
+        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px 12px', flexWrap: 'wrap' }}
       >
         <button
           type="button"
+          className="ai-chat-urgent-btn"
           onClick={(e) => { e.stopPropagation(); setUrgent(u => !u) }}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,

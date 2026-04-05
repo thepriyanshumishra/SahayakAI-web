@@ -58,11 +58,13 @@ export default function VoiceChat({ onClose, onTranscript }) {
     setIsListening(true)
 
     // Real timer — fires exactly every 1000ms
+    if (timerRef.current) clearInterval(timerRef.current)
     timerRef.current = setInterval(() => {
       setSeconds(s => s + 1)
     }, 1000)
 
     // Waveform animation — fires fast for visual effect only
+    if (waveRef.current) clearInterval(waveRef.current)
     waveRef.current = setInterval(() => {
       setWaveformData(Array(28).fill(0).map(() => Math.random() * 85 + 10))
       setVolume(Math.random() * 75 + 20)
@@ -71,6 +73,7 @@ export default function VoiceChat({ onClose, onTranscript }) {
     // Web Speech API (best free engine — built into Chrome/Edge/Safari)
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition
     if (SR) {
+      if (recognitionRef.current) recognitionRef.current.stop()
       const recognition = new SR()
       recognition.continuous = true
       recognition.interimResults = true  // show partial results live
@@ -100,25 +103,29 @@ export default function VoiceChat({ onClose, onTranscript }) {
 
       // Auto-stop if engine ends on its own (e.g. silence timeout)
       recognition.onend = () => {
-        if (recognitionRef.current) stopListening()
+        // Only stop if we haven't manually stopped it
+        if (isListening) stopListening()
       }
 
       recognition.start()
       recognitionRef.current = recognition
     }
-    // If browser doesn't support SR, user can still type manually
   }
 
   // ── Stop listening ────────────────────────────────────────
   const stopListening = async () => {
-    if (!recognitionRef.current && !isListening) return
-    
-    // Stop everything
-    recognitionRef.current?.stop()
-    recognitionRef.current = null
-    clearInterval(timerRef.current)
-    clearInterval(waveRef.current)
+    // Clear intervals immediately to stop timer jump
+    if (timerRef.current) clearInterval(timerRef.current)
+    if (waveRef.current) clearInterval(waveRef.current)
+    timerRef.current = null
+    waveRef.current = null
 
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null // clear to avoid loop
+      recognitionRef.current.stop()
+      recognitionRef.current = null
+    }
+    
     setIsListening(false)
     setWaveformData(Array(28).fill(4))
     setVolume(0)
@@ -130,7 +137,7 @@ export default function VoiceChat({ onClose, onTranscript }) {
     setIsProcessing(false)
     setIsDone(true)
 
-    const result = finalTranscriptRef.current.trim()
+    const result = liveText.trim() // Use liveText as it has the full current state
 
     // Short "Got it" display then close with transcript
     await new Promise(r => setTimeout(r, 700))
@@ -142,7 +149,7 @@ export default function VoiceChat({ onClose, onTranscript }) {
   const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   const statusText = isListening
-    ? 'Tap mic to stop'
+    ? "Tap mic to stop listening when you're complete"
     : isProcessing
       ? 'Processing speech...'
       : isDone
@@ -218,7 +225,7 @@ export default function VoiceChat({ onClose, onTranscript }) {
       </button>
 
       {/* Main content */}
-      <div style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32, padding: '0 24px', maxWidth: 480, width: '100%' }}>
+      <div className="voice-modal-inner" style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28, padding: '0 20px', width: 'min(480px, calc(100vw - 32px))' }}>
         
         {/* Mic Button */}
         <div style={{ position: 'relative' }}>

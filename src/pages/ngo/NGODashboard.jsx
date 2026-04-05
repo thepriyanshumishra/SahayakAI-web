@@ -60,10 +60,10 @@ function NGODashboard() {
           <h1 style={{ fontSize: '2.5rem', fontFamily: 'var(--font-display)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.05em' }}>
             {profile?.orgName || 'Dashboard'}
           </h1>
-          <p style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8, fontSize: '1rem' }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--priority-low)', boxShadow: '0 0 8px var(--priority-low)' }} />
             <span style={{ fontWeight: 600 }}>System Online</span> · Verified Account
-          </p>
+          </div>
         </div>
 
         <button

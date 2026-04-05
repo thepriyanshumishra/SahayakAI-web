@@ -1,109 +1,193 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { Mail, ArrowLeft, CheckCircle2, LogOut } from 'lucide-react'
 import useAuthStore from '../../store/useAuthStore.js'
-import { submitNGOAppeal } from '../../services/authService.js'
-import Button from '../../components/common/Button.jsx'
+import { signOutUser } from '../../services/authService.js'
 
 function NGOPendingPage() {
-  const { profile, user, setProfile } = useAuthStore()
+  const { profile } = useAuthStore()
   const navigate = useNavigate()
-  const [appealText, setAppealText] = React.useState(profile?.appealMessage || '')
-  const [submitting, setSubmitting] = React.useState(false)
-  const [done, setDone] = React.useState(false)
-  const [error, setError] = React.useState(null)
+  
   const isPending = profile?.verificationStatus === 'pending'
   const isRejected = profile?.verificationStatus === 'rejected'
 
-  const handleAppeal = async () => {
-    if (!appealText.trim()) { setError('Please enter your appeal message.'); return }
-    setSubmitting(true)
-    setError(null)
-    try {
-      await submitNGOAppeal(user.uid, appealText)
-      setProfile({ ...profile, appealMessage: appealText })
-      setDone(true)
-    } catch {
-      setError('Failed to submit appeal. Please try again.')
-    } finally {
-      setSubmitting(false)
-    }
-  }
-
   return (
     <div style={{
-      minHeight: '100vh', background: 'var(--bg-base)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 'var(--space-6)',
+      minHeight: '100vh', 
+      background: '#fff',
+      display: 'flex', 
+      alignItems: 'center', 
+      justifyContent: 'center',
+      position: 'relative',
+      padding: '40px 24px',
+      fontFamily: '"Geist", "Inter", sans-serif'
     }}>
-      <div style={{ maxWidth: 560, width: '100%', textAlign: 'center' }}>
-        {isPending && (
-          <>
-            <div style={{ fontSize: 80, marginBottom: 'var(--space-6)', animation: 'float 3s ease-in-out infinite' }}>⏳</div>
-            <h1 style={{ fontSize: 'var(--text-3xl)', marginBottom: 'var(--space-4)' }}>Verification Pending</h1>
-            <p className="text-secondary" style={{ marginBottom: 'var(--space-8)', lineHeight: 1.7 }}>
-              Your organization <strong style={{ color: 'var(--text-primary)' }}>{profile?.orgName}</strong> is under review.
-              An administrator will verify your account shortly. You will be notified once approved.
-            </p>
-            <div style={{
-              background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-xl)', padding: 'var(--space-6)',
-              display: 'flex', flexDirection: 'column', gap: 'var(--space-3)',
-              textAlign: 'left', marginBottom: 'var(--space-6)',
-            }}>
-              {[
-                'Document verification in progress',
-                'Background eligibility check',
-                'Admin approval pending',
-              ].map((step, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-full)', background: 'var(--bg-overlay)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14 }}>
-                    {i === 0 ? '⟳' : '○'}
-                  </div>
-                  <p className="text-sm text-secondary">{step}</p>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+      {/* Logout corner button */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        whileHover={{ background: 'var(--bg-hover)', borderColor: 'var(--text-primary)', color: 'var(--text-primary)' }}
+        whileTap={{ scale: 0.96 }}
+        onClick={async () => {
+          await signOutUser()
+          navigate('/login')
+        }}
+        style={{
+          position: 'absolute',
+          top: 32,
+          right: 32,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '12px 20px',
+          borderRadius: 14,
+          border: '1.5px solid var(--border-subtle)',
+          background: '#fff',
+          color: 'var(--text-secondary)',
+          fontSize: '0.88rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          zIndex: 100,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.03)'
+        }}
+      >
+        <LogOut size={16} /> Logout
+      </motion.button>
+      <div style={{ maxWidth: 640, width: '100%', textAlign: 'center' }}>
+        
+        {/* Hourglass Icon */}
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+          style={{ fontSize: '4.5rem', marginBottom: 40, filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.1))' }}
+        >
+          {isRejected ? '🛡️' : '⏳'}
+        </motion.div>
 
-        {isRejected && (
-          <>
-            <div style={{ fontSize: 80, marginBottom: 'var(--space-6)' }}>❌</div>
-            <h1 style={{ fontSize: 'var(--text-3xl)', marginBottom: 'var(--space-4)' }}>Verification Rejected</h1>
-            <p className="text-secondary" style={{ marginBottom: 'var(--space-8)', lineHeight: 1.7 }}>
-              Unfortunately, your organization could not be verified at this time.
-              You can submit an appeal below to request re-evaluation.
-            </p>
-
-            {done ? (
-              <div style={{
-                background: 'rgba(0,212,170,0.08)', border: '1px solid rgba(0,212,170,0.25)',
-                borderRadius: 'var(--radius-lg)', padding: 'var(--space-5)',
-              }}>
-                <p style={{ color: 'var(--brand-secondary)', fontWeight: 600 }}>✅ Appeal submitted successfully!</p>
-                <p className="text-sm text-muted mt-2">An admin will review your appeal and respond shortly.</p>
-              </div>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.8 }}
+        >
+          <h1 style={{ 
+            fontSize: '3.8rem', 
+            fontWeight: 800, 
+            color: 'var(--text-primary)', 
+            marginBottom: 20, 
+            letterSpacing: '-0.04em',
+            fontFamily: '"Playfair Display", "Times New Roman", serif',
+            lineHeight: 1
+          }}>
+            {isRejected ? 'Verification Rejected' : 'Verification\nPending'}
+          </h1>
+          
+          <p style={{ 
+            fontSize: '1.1rem', 
+            lineHeight: 1.6, 
+            color: 'var(--text-secondary)', 
+            marginBottom: 48,
+            maxWidth: 480,
+            margin: '0 auto 48px'
+          }}>
+            {isRejected ? (
+              <>We encountered issues while verifying {profile?.orgName || 'your organization'}. Please check your email or contact support.</>
             ) : (
-              <>
-                <div className="form-group" style={{ textAlign: 'left' }}>
-                  <label className="label" htmlFor="appeal-text">Appeal Message</label>
-                  <textarea
-                    id="appeal-text"
-                    className="input"
-                    rows={5}
-                    placeholder="Explain why your organization should be approved. Provide any additional information that might help..."
-                    value={appealText}
-                    onChange={(e) => setAppealText(e.target.value)}
-                  />
-                </div>
-                {error && <p className="error-text mb-4">{error}</p>}
-                <Button id="submit-appeal-btn" variant="primary" size="lg" loading={submitting} onClick={handleAppeal} style={{ width: '100%' }}>
-                  Submit Appeal
-                </Button>
-              </>
+              <>Your organization {profile?.orgName ? <strong>{profile.orgName}</strong> : 'your organization'} is under review. An administrator will verify your account shortly. You will be notified once approved.</>
             )}
-          </>
+          </p>
+        </motion.div>
+
+        {isPending && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
+            style={{
+              background: '#fff',
+              borderRadius: 24,
+              border: '1.5px solid var(--border-subtle)',
+              padding: '32px',
+              maxWidth: 420,
+              margin: '0 auto 52px',
+              textAlign: 'left',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.02)'
+            }}
+          >
+            {[
+              { label: 'Document verification in progress', done: true },
+              { label: 'Background eligibility check', done: false, active: true },
+              { label: 'Admin approval pending', done: false }
+            ].map((step, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: '50%',
+                  border: `1.5px solid ${step.done || step.active ? 'var(--text-primary)' : 'var(--border-subtle)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: step.done ? 'transparent' : 'transparent'
+                }}>
+                  {step.done ? <CheckCircle2 size={13} color="var(--text-primary)" /> : 
+                   step.active ? (
+                     <motion.div 
+                       animate={{ opacity: [0.3, 1, 0.3] }} 
+                       transition={{ repeat: Infinity, duration: 2 }}
+                       style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-primary)' }} 
+                     />
+                   ) : (
+                     <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--border-subtle)' }} />
+                   )}
+                </div>
+                <p style={{ 
+                  fontSize: '0.92rem', 
+                  fontWeight: 500, 
+                  color: step.done || step.active ? 'var(--text-primary)' : 'var(--text-muted)',
+                  opacity: step.done || step.active ? 1 : 0.6
+                }}>{step.label}</p>
+              </div>
+            ))}
+          </motion.div>
         )}
+
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6 }}
+          style={{ display: 'flex', flexWrap: 'wrap', gap: 16, justifyContent: 'center' }}
+        >
+          <button
+            className="btn btn-primary"
+            onClick={() => window.location.href = 'mailto:verify@sahayakai.com?subject=Verification Request: ' + (profile?.orgName || 'NGO')}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: 10, 
+              padding: '16px 32px', 
+              background: '#0a0a0a', 
+              color: '#fff',
+              borderRadius: 14,
+              fontWeight: 600,
+              border: 'none',
+              cursor: 'pointer'
+            }}
+          >
+            <Mail size={18} /> Contact System Admin
+          </button>
+          
+          <button
+            className="btn btn-secondary"
+            onClick={() => navigate('/profile')}
+            style={{ 
+              display: 'flex', alignItems: 'center', gap: 8, 
+              padding: '16px 32px',
+              borderRadius: 14,
+              border: '1.5px solid var(--border-subtle)',
+              background: 'transparent',
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+          >
+            <ArrowLeft size={16} /> My Profile
+          </button>
+        </motion.div>
       </div>
     </div>
   )

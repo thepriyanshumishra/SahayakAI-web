@@ -163,20 +163,23 @@ function ReviewDrawer({ ngo, onClose, onApprove, onReject, isLoading }) {
 
           {/* Actions */}
           <div style={{ display: 'flex', gap: 12 }}>
-            <button
-              disabled={isLoading}
-              onClick={() => onApprove(ngo)}
-              style={{
-                flex: 1, padding: '12px 0', borderRadius: 'var(--radius-md)',
-                background: 'var(--priority-low)', color: '#fff',
-                fontWeight: 700, fontSize: '0.9rem', border: 'none',
-                cursor: isLoading ? 'not-allowed' : 'pointer',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                opacity: isLoading ? 0.7 : 1, transition: 'opacity 0.2s',
-              }}
-            >
-              <Check size={16} /> Approve NGO
-            </button>
+            {ngo.verificationStatus !== 'approved' && (
+              <button
+                disabled={isLoading}
+                onClick={() => onApprove(ngo)}
+                style={{
+                  flex: 1, padding: '12px 0', borderRadius: 'var(--radius-md)',
+                  background: 'var(--priority-low)', color: '#fff',
+                  fontWeight: 700, fontSize: '0.9rem', border: 'none',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  opacity: isLoading ? 0.7 : 1, transition: 'opacity 0.2s',
+                }}
+              >
+                <Check size={16} /> Approve NGO
+              </button>
+            )}
+            
             <button
               disabled={isLoading}
               onClick={() => onReject(ngo, reason)}
@@ -189,7 +192,15 @@ function ReviewDrawer({ ngo, onClose, onApprove, onReject, isLoading }) {
                 opacity: isLoading ? 0.7 : 1, transition: 'opacity 0.2s',
               }}
             >
-              <X size={16} /> Reject
+              {ngo.verificationStatus === 'approved' ? (
+                <>
+                  <AlertTriangle size={16} /> Debar NGO
+                </>
+              ) : (
+                <>
+                  <X size={16} /> Reject
+                </>
+              )}
             </button>
           </div>
         </motion.div>
@@ -260,7 +271,7 @@ function NGORow({ ngo, index, onSelect, canAction }) {
             }}
             className="ngo-review-btn"
           >
-            <Eye size={14} /> Review
+            <Eye size={14} /> {ngo.verificationStatus === 'approved' ? 'Manage' : 'Review'}
           </button>
         ) : (
           <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>—</span>
@@ -518,7 +529,9 @@ export default function NGOReviewPage() {
                 <AnimatePresence>
                   {visible.length > 0 ? (
                     visible.map((ngo, i) => {
-                      const canAction = ngo.verificationStatus === 'pending' || (ngo.verificationStatus === 'rejected' && ngo.appealMessage)
+                      const canAction = ngo.verificationStatus === 'pending' || 
+                                        ngo.verificationStatus === 'approved' || 
+                                        (ngo.verificationStatus === 'rejected' && ngo.appealMessage)
                       return (
                         <NGORow key={ngo.id} ngo={ngo} index={i} onSelect={setSelected} canAction={canAction} />
                       )
