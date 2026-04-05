@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Helmet } from 'react-helmet-async'
 import useAuthStore from '../store/useAuthStore.js'
 import PublicNavbar from '../components/common/PublicNavbar.jsx'
 import HeroFloatingCards from '../components/ui/HeroFloatingCards.jsx'
+import Preloader from '../components/ui/Preloader.jsx'
 import { motion, AnimatePresence } from 'framer-motion'
 import { doc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore'
 import { db } from '../config/firebase.js'
@@ -41,6 +42,12 @@ export default function LandingPage() {
   const [pulseEvents, setPulseEvents] = useState([
     { user: 'System AI', action: 'initializing rescue network', loc: 'Global', time: 'just now' }
   ])
+
+  // Show preloader every page load
+  const [showPreloader, setShowPreloader] = useState(true)
+  const handlePreloaderComplete = useCallback(() => {
+    setShowPreloader(false)
+  }, [])
 
   useEffect(() => {
     let animationId = null
@@ -112,7 +119,19 @@ export default function LandingPage() {
   }, [pulseEvents.length])
 
   return (
-    <div style={{ background: 'var(--bg-base)', minHeight: '100vh', overflowX: 'hidden' }}>
+    <>
+      <AnimatePresence>
+        {showPreloader && (
+          <Preloader key="preloader" onComplete={handlePreloaderComplete} />
+        )}
+      </AnimatePresence>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: showPreloader ? 0 : 1 }}
+        transition={{ duration: 0.6 }}
+        style={{ background: 'var(--bg-base)', minHeight: '100vh', overflowX: 'hidden' }}
+      >
       <Helmet>
         <title>SahayakAI | Connecting Volunteers &amp; NGOs For Impact</title>
         <meta name="description" content="SahayakAI is an AI-powered platform connecting verified NGOs with ready volunteers for disaster response and community aid missions." />
@@ -329,6 +348,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+    </motion.div>
+    </>
   )
 }

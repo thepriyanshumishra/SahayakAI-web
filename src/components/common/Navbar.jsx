@@ -29,7 +29,7 @@ export default function Navbar({ onMenuToggle }) {
 
   return (
     <nav className="navbar glass-card" style={{ 
-      position: 'sticky', top: 0, zIndex: 1000, 
+      position: 'sticky', top: 0, 
       display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
       padding: '0 24px', height: 72, borderBottom: '1px solid var(--border-subtle)',
       borderRadius: 0, borderTop: 'none', borderLeft: 'none', borderRight: 'none'

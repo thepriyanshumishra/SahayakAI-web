@@ -91,11 +91,7 @@ function ReviewDrawer({ ngo, onClose, onApprove, onReject, isLoading }) {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.96, y: 16 }}
           transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-          style={{
-            background: 'var(--bg-surface)', borderRadius: 'var(--radius-xl)',
-            padding: 32, maxWidth: 560, width: '100%',
-            boxShadow: 'var(--shadow-lg)', border: '1px solid var(--border-subtle)',
-          }}
+          className="review-drawer-content"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}
@@ -362,7 +358,7 @@ export default function NGOReviewPage() {
   ]
 
   return (
-    <div className="page-content" style={{ maxWidth: 1100 }}>
+    <div className="page-content ngo-management-container">
 
       {/* ── Page Header ── */}
       <div style={{ marginBottom: 32 }}>
@@ -395,8 +391,7 @@ export default function NGOReviewPage() {
       )}
 
       {/* ── Stats Row ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 28 }}
-           className="ngo-stats-grid">
+      <div className="ngo-stats-grid">
         {stats.map((s, i) => (
           <motion.div
             key={s.label}
@@ -427,11 +422,7 @@ export default function NGOReviewPage() {
       </div>
 
       {/* ── Toolbar ── */}
-      <div style={{
-        background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)',
-        borderRadius: 'var(--radius-lg)', padding: '14px 18px',
-        display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center', flexWrap: 'wrap',
-      }}>
+      <div className="ngo-toolbar">
 
         {/* Search */}
         <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>

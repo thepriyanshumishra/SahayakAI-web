@@ -38,10 +38,10 @@ function NavItem({ to, icon: Icon, label, id, end, isLast }) {
               fontSize: '0.95rem',
             }}
           >
-            <Icon size={20} style={{ 
+            <Icon size={20} className="nav-icon" style={{ 
               color: isActive ? 'var(--text-inverse)' : 'var(--text-muted)'
             }} />
-            <span className="hide-on-collapse" style={{ flex: 1 }}>{label}</span>
+            <span className="hide-on-collapse">{label}</span>
           </div>
           
           {/* Subtle separator line between inactive links */}
@@ -96,7 +96,6 @@ export default function Sidebar({ open, onClose, onToggle }) {
               position: 'fixed', inset: 0,
               background: 'rgba(0,0,0,0.4)',
               backdropFilter: 'blur(4px)',
-              zIndex: 999,
             }}
             onClick={onClose}
           />

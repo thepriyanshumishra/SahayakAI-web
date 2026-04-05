@@ -174,45 +174,92 @@ function AdminDashboard() {
 
       {/* RECENT MISSION STREAM */}
       <div className="glass-card" style={{ padding: 0, borderRadius: 'var(--radius-xl)', overflow: 'hidden', border: '1px solid var(--border-subtle)', background: 'var(--bg-surface)' }}>
-        <div style={{ padding: '24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-hover)' }}>
-          <h3 style={{ fontSize: '1.4rem', fontFamily: 'var(--font-display)', fontWeight: 700, margin: 0 }}>Live Resource Stream</h3>
-          <button className="btn btn-secondary btn-sm" style={{ background: 'var(--bg-surface)' }}>Export Logs</button>
+        <div style={{ padding: '24px 32px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg-hover)' }}>
+          <div>
+            <h3 style={{ fontSize: '1.4rem', fontFamily: 'var(--font-display)', fontWeight: 800, margin: 0, letterSpacing: '-0.02em' }}>Live Mission Stream</h3>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Real-time coordination across verified sectors</p>
+          </div>
+          <button className="btn btn-secondary btn-sm" style={{ background: 'var(--bg-surface)', fontWeight: 600 }}>Export Audit Logs</button>
         </div>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        
+        <div className="admin-stream-container" style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 800 }}>
             <thead>
               <tr style={{ background: 'var(--bg-hover)', textAlign: 'left' }}>
                 {['Mission Summary', 'Category', 'Z-Priority', 'Status', 'Deployment'].map(h => (
-                  <th key={h} style={{ padding: '16px 32px', fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1.5 }}>{h}</th>
+                  <th key={h} style={{ padding: '16px 32px', fontSize: '0.65rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1.5 }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {recentTasks.map((t, i) => (
-                <tr key={t.id} style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.2s' }}>
+                <motion.tr 
+                  key={t.id} 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.03 }}
+                  className="hovrow"
+                  style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background 0.2s' }}
+                >
                   <td style={{ padding: '20px 32px' }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.9rem', margin: 0 }} className="truncate">{t.aiSummary || t.description?.slice(0, 50)}</p>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{t.orgName}</p>
-                  </td>
-                  <td style={{ padding: '20px 32px' }}>
-                    <span className="badge badge-neutral" style={{ background: 'var(--bg-elevated)', border: 'none' }}>{t.category}</span>
-                  </td>
-                  <td style={{ padding: '20px 32px' }}>
-                     <div style={{ color: statusColor[t.priority] || 'var(--text-primary)', fontWeight: 800, fontSize: '0.8rem' }}>{t.priority?.toUpperCase()}</div>
-                  </td>
-                  <td style={{ padding: '20px 32px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 700, color: statusColor[t.status] || 'var(--text-muted)' }}>
-                      <div className="status-dot" style={{ background: statusColor[t.status] }} /> {t.status}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      <p style={{ fontWeight: 800, fontSize: '0.9rem', margin: 0, color: 'var(--text-primary)' }} className="truncate-max">
+                        {t.aiSummary || t.description?.slice(0, 60)}
+                      </p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+                         <Building2 size={12} /> {t.orgName || 'NGO Partner'}
+                      </p>
                     </div>
                   </td>
                   <td style={{ padding: '20px 32px' }}>
-                    <div style={{ fontSize: '0.85rem', fontWeight: 600 }}>{t.currentVolunteers}/{t.requiredVolunteers} <span style={{ opacity: 0.5 }}>Respondents</span></div>
+                    <span className="badge badge-neutral" style={{ background: 'rgba(0,0,0,0.03)', border: 'none', fontSize: '0.65rem', fontWeight: 700, padding: '4px 10px' }}>
+                      {t.category?.toUpperCase()}
+                    </span>
                   </td>
-                </tr>
+                  <td style={{ padding: '20px 32px' }}>
+                     <div style={{ 
+                        color: statusColor[t.priority] || 'var(--text-primary)', 
+                        background: `${statusColor[t.priority]}15`,
+                        padding: '4px 12px',
+                        borderRadius: 20,
+                        display: 'inline-flex',
+                        fontWeight: 800, 
+                        fontSize: '0.65rem',
+                        letterSpacing: 0.5
+                     }}>
+                        {t.priority?.toUpperCase()}
+                     </div>
+                  </td>
+                  <td style={{ padding: '20px 32px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.75rem', fontWeight: 700, color: statusColor[t.status] || 'var(--text-muted)' }}>
+                      <div className="status-dot" style={{ background: statusColor[t.status], width: 8, height: 8 }} />
+                      <span style={{ textTransform: 'capitalize' }}>{t.status}</span>
+                    </div>
+                  </td>
+                  <td style={{ padding: '20px 32px' }}>
+                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                      {t.currentVolunteers} <span style={{ opacity: 0.4, fontWeight: 500 }}>/ {t.requiredVolunteers} Responders</span>
+                    </div>
+                    {/* Progress mini bar */}
+                    <div style={{ height: 4, width: 100, background: 'var(--border-subtle)', borderRadius: 2, marginTop: 6, overflow: 'hidden' }}>
+                       <div style={{ 
+                          height: '100%', 
+                          width: `${(t.currentVolunteers/t.requiredVolunteers)*100}%`, 
+                          background: t.status === 'resolved' ? 'var(--brand-secondary)' : 'var(--brand-primary)',
+                          borderRadius: 2
+                       }} />
+                    </div>
+                  </td>
+                </motion.tr>
               ))}
             </tbody>
           </table>
         </div>
+        {recentTasks.length === 0 && (
+          <div style={{ padding: '60px 32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p>No active missions in the current stream buffer.</p>
+          </div>
+        )}
       </div>
     </div>
   )
