@@ -392,7 +392,7 @@ export default function VoiceChat({ onClose, onComplete }) {
              }
          </motion.button>
          
-         <button onClick={() => { window.speechSynthesis.cancel(); onClose?.() }} 
+         <button onClick={handleClose} 
             style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}>
             <X size={22} />
          </button>
