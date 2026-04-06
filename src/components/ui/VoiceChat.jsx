@@ -148,7 +148,7 @@ export default function VoiceChat({ onClose, onComplete }) {
 
     const rec = new SpeechRecognition()
     rec.lang = activeCharRef.current.langCode === 'hi' ? 'hi-IN' : 'en-IN'
-    rec.continuous = true
+    rec.continuous = false
     rec.interimResults = true
 
     rec.onresult = e => {
@@ -242,15 +242,17 @@ export default function VoiceChat({ onClose, onComplete }) {
       if (response.hasEnoughInfo) {
         setPhase('done')
         setStatusMsg('Mission complete!')
-        const finalReply = response.nextReply || "Thank you. I have all the details. Mission is being deployed."
-        await speakText(finalReply, activeCharRef.current, () => {
+        const finalMessage = response.nextReply || 'I have all the details needed. Mission is being processed.'
+        await speakText(finalMessage, activeCharRef.current, () => {
           onComplete?.({ extracted: extractedRef.current, answers: {} })
-        }, (idx, len) => setLiveText(finalReply.slice(0, idx + len)))
+        }, (idx, len) => setLiveText(finalMessage.slice(0, idx + len)))
         return
       }
 
-      const isHindi = /[\u0900-\u097F]/.test(response.nextReply) || 
-                      /\b(mera|hai|ki|ka|tha|madad|kya|nahi)\b/i.test(response.nextReply)
+      let replyText = response.nextReply || 'Could you provide more details?'
+
+      const isHindi = /[\u0900-\u097F]/.test(replyText) || 
+                      /\b(mera|hai|ki|ka|tha|madad|kya|nahi)\b/i.test(replyText)
       
       let speechChar = activeCharRef.current
       if (isHindi && activeCharRef.current.id !== 'devi') {
@@ -258,24 +260,25 @@ export default function VoiceChat({ onClose, onComplete }) {
         if (deviVoice) {
           pickChar(deviVoice)
           speechChar = deviVoice
+          replyText = "आवाज़ बदलने के लिए माफ़ी चाहूंगी, " + replyText
         }
       }
 
-      messagesRef.current.push({ role: 'assistant', content: response.nextReply })
+      messagesRef.current.push({ role: 'assistant', content: replyText })
       setPhase('speaking_q')
       setStatusMsg(`${speechChar.name} is speaking…`)
       
-      await speakText(response.nextReply, speechChar, () => {
+      await speakText(replyText, speechChar, () => {
         if (isPaused) return
         setPhase('listening_answer')
         setStatusMsg('Listening for your answer…')
         setLiveText('')
         startListening(handleUserSpeech)
       }, (idx, len) => {
-        if (!isPaused) setLiveText(response.nextReply.slice(0, idx + len))
+        if (!isPaused) setLiveText(replyText.slice(0, idx + len))
       })
     } catch (e) {
-      console.error('VoiceChat AI Error:', e)
+      console.error(e)
       setStatusMsg('AI error. Tap to retry.')
       setPhase('idle')
     }
@@ -392,7 +395,7 @@ export default function VoiceChat({ onClose, onComplete }) {
              }
          </motion.button>
          
-         <button onClick={handleClose} 
+         <button onClick={() => { window.speechSynthesis.cancel(); onClose?.() }} 
             style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}>
             <X size={22} />
          </button>
