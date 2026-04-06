@@ -1,19 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { ChevronRight, SkipForward, Sparkles, CheckCircle2 } from 'lucide-react'
+import { ChevronRight, ChevronLeft, SkipForward, Sparkles, CheckCircle2, Volume2, VolumeX } from 'lucide-react'
 import LocationPicker from './LocationPicker'
 import MediaUpload from './MediaUpload'
+import { speakAsCharacter, stopSpeaking, VOICE_CHARACTERS } from '../../config/voiceCharacters'
 
 // ─── Question Card ───────────────────────────────────────────
-function QuestionCard({ question, onAnswer, onSkip }) {
+function QuestionCard({ question, onAnswer, onSkip, onBack }) {
   const [customText, setCustomText] = useState('')
   const [locationData, setLocationData] = useState(null)
   const [mediaFiles, setMediaFiles] = useState([])
   const [selectedChip, setSelectedChip] = useState(null)
+  const [selectedChips, setSelectedChips] = useState([])
+  const [counterValue, setCounterValue] = useState(0)
 
   const canContinue = () => {
     if (question.type === 'location') return !!locationData?.address
     if (question.type === 'media') return mediaFiles.length > 0
+    if (question.type === 'multiselect') return selectedChips.length > 0 || !!customText.trim()
+    if (question.type === 'counter') return counterValue > 0
     return !!(selectedChip || customText.trim())
   }
 
@@ -22,19 +27,31 @@ function QuestionCard({ question, onAnswer, onSkip }) {
       onAnswer({ type: 'location', ...locationData })
     } else if (question.type === 'media') {
       onAnswer({ type: 'media', files: mediaFiles })
+    } else if (question.type === 'multiselect') {
+      const result = [...selectedChips]
+      if (customText.trim()) result.push(customText.trim())
+      onAnswer(result.join(', '))
+    } else if (question.type === 'counter') {
+      onAnswer(counterValue.toString())
     } else {
       onAnswer(selectedChip || customText.trim())
     }
   }
 
   const handleChipSelect = (chip) => {
-    setSelectedChip(prev => prev === chip ? null : chip)
-    setCustomText('')
+    if (question.type === 'multiselect') {
+      setSelectedChips(prev => 
+        prev.includes(chip) ? prev.filter(c => c !== chip) : [...prev, chip]
+      )
+    } else {
+      setSelectedChip(prev => prev === chip ? null : chip)
+      setCustomText('')
+    }
   }
 
   const handleCustomChange = (val) => {
     setCustomText(val)
-    setSelectedChip(null)
+    if (question.type !== 'multiselect') setSelectedChip(null)
   }
 
   return (
@@ -47,45 +64,91 @@ function QuestionCard({ question, onAnswer, onSkip }) {
         )}
       </p>
 
-      {/* Suggestion Chips (text / choice types) */}
-      {(question.type === 'text' || question.type === 'choice') && question.suggestions?.length > 0 && (
+      {/* Suggestion Chips (text / choice / select / multiselect types) */}
+      {(['text', 'choice', 'select', 'multiselect'].includes(question.type)) && question.suggestions?.length > 0 && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {question.suggestions.map((s) => (
-            <motion.button
-              key={s}
-              type="button"
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.96 }}
-              onClick={() => handleChipSelect(s)}
-              style={{
-                padding: '8px 18px', borderRadius: 30,
-                border: `1.5px solid ${selectedChip === s ? 'var(--brand-primary)' : 'var(--border-subtle)'}`,
-                background: selectedChip === s ? 'rgba(64,145,108,0.1)' : '#fff',
-                color: selectedChip === s ? 'var(--brand-primary)' : 'var(--text-secondary)',
-                fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 6,
-                transition: 'all 0.2s',
-              }}
-            >
-              {selectedChip === s && <CheckCircle2 size={13} />}
-              {s}
-            </motion.button>
-          ))}
+          {question.suggestions.map((s) => {
+            const isSelected = question.type === 'multiselect' ? selectedChips.includes(s) : selectedChip === s;
+            return (
+              <motion.button
+                key={s}
+                type="button"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.96 }}
+                onClick={() => handleChipSelect(s)}
+                style={{
+                  padding: '8px 18px', borderRadius: 30,
+                  border: `1.5px solid ${isSelected ? 'var(--brand-primary)' : 'var(--border-subtle)'}`,
+                  background: isSelected ? 'rgba(64,145,108,0.1)' : '#fff',
+                  color: isSelected ? 'var(--brand-primary)' : 'var(--text-secondary)',
+                  fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6,
+                  transition: 'all 0.2s',
+                }}
+              >
+                {isSelected && <CheckCircle2 size={13} />}
+                {s}
+              </motion.button>
+            )
+          })}
         </div>
       )}
 
-      {/* Custom Text Input (text / choice types) */}
-      {(question.type === 'text' || question.type === 'choice') && (
+      {/* Custom Text Input (text / choice / select / multiselect types) */}
+      {(['text', 'choice', 'select', 'multiselect'].includes(question.type)) && (
         <div style={{ position: 'relative' }}>
           <input
             type="text"
             className="input"
-            placeholder={selectedChip ? `Using: "${selectedChip}" — or type to override` : 'Or type your answer…'}
+            placeholder={
+              question.type === 'multiselect' && selectedChips.length > 0
+                ? `Added ${selectedChips.length} item(s) — or type more`
+                : selectedChip
+                ? `Using: "${selectedChip}" — or type to override`
+                : 'Or type your answer…'
+            }
             value={customText}
             onChange={e => handleCustomChange(e.target.value)}
             style={{ fontSize: '0.9rem' }}
             onKeyDown={e => { if (e.key === 'Enter' && canContinue()) handleSubmit() }}
           />
+        </div>
+      )}
+
+      {/* Counter Input */}
+      {question.type === 'counter' && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <button 
+             type="button"
+             onClick={() => setCounterValue(v => Math.max(0, v - 1))}
+             style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--bg-hover)', border: 'none', fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >-</button>
+          <input 
+             type="number" 
+             value={counterValue || ''} 
+             placeholder="0"
+             onChange={e => setCounterValue(Math.max(0, parseInt(e.target.value) || 0))}
+             style={{ width: 80, textAlign: 'center', fontSize: '1.2rem', padding: '8px', border: '1.5px solid var(--border-subtle)', borderRadius: 12, fontWeight: 700 }}
+          />
+          <button 
+             type="button"
+             onClick={() => setCounterValue(v => v + 1)}
+             style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--bg-hover)', border: 'none', fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >+</button>
+          
+          {question.suggestions?.length > 0 && (
+             <div style={{ display: 'flex', gap: 8, marginLeft: 10, flexWrap: 'wrap' }}>
+                {question.suggestions.map(s => {
+                   const num = parseInt(s);
+                   if (isNaN(num)) return null;
+                   return (
+                     <button key={s} type="button" onClick={() => setCounterValue(num)} style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#fff', border: '1px solid var(--border-subtle)', borderRadius: 20, cursor: 'pointer', fontWeight: 600 }}>
+                       {s}
+                     </button>
+                   )
+                })}
+             </div>
+          )}
         </div>
       )}
 
@@ -107,21 +170,39 @@ function QuestionCard({ question, onAnswer, onSkip }) {
 
       {/* Actions */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-        <button
-          type="button"
-          onClick={onSkip}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 700,
-            display: 'flex', alignItems: 'center', gap: 5, padding: '8px 4px',
-            transition: 'color 0.2s',
-          }}
-          onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-          onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-        >
-          <SkipForward size={14} />
-          Skip
-        </button>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            type="button"
+            onClick={onBack}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 5, padding: '8px 4px',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            <ChevronLeft size={14} />
+            Back
+          </button>
+
+          <button
+            type="button"
+            onClick={onSkip}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              color: 'var(--text-muted)', fontSize: '0.82rem', fontWeight: 700,
+              display: 'flex', alignItems: 'center', gap: 5, padding: '8px 4px',
+              transition: 'color 0.2s',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            <SkipForward size={14} />
+            Skip
+          </button>
+        </div>
 
         <motion.button
           type="button"
@@ -146,13 +227,23 @@ function QuestionCard({ question, onAnswer, onSkip }) {
 }
 
 // ─── Main AIQuestionFlow Component ───────────────────────────
-export default function AIQuestionFlow({ questions = [], extracted, onComplete, onBack }) {
+export default function AIQuestionFlow({ questions = [], extracted, onComplete, onBack, voiceId = 'ananya' }) {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [answers, setAnswers] = useState({})
   const [direction, setDirection] = useState(1)
+  const [isSpeaking, setIsSpeaking] = useState(false)
 
   const current = questions[currentIndex]
   const isLast = currentIndex === questions.length - 1
+  const activeChar = VOICE_CHARACTERS.find(v => v.id === voiceId) || VOICE_CHARACTERS[2]
+
+  // Auto-speak each question when it appears
+  useEffect(() => {
+    if (!current?.question) return
+    setIsSpeaking(true)
+    speakAsCharacter(current.question, voiceId, () => setIsSpeaking(false))
+    return () => stopSpeaking()
+  }, [currentIndex, voiceId])
   const progress = questions.length > 0 ? ((currentIndex) / questions.length) * 100 : 0
 
   const advance = (answer) => {
@@ -169,6 +260,15 @@ export default function AIQuestionFlow({ questions = [], extracted, onComplete, 
     }
   }
 
+  const handleBack = () => {
+    if (currentIndex === 0) {
+      onBack()
+    } else {
+      setDirection(-1)
+      setCurrentIndex(i => i - 1)
+    }
+  }
+
   if (!questions.length) return null
 
   const slideVariants = {
@@ -179,6 +279,51 @@ export default function AIQuestionFlow({ questions = [], extracted, onComplete, 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+      {/* ── Active voice badge ── */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', borderRadius: 14,
+          background: 'var(--bg-hover)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 10,
+            background: activeChar.gradient,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: '0.95rem',
+            boxShadow: `0 3px 8px ${activeChar.accentColor}40`,
+          }}>
+            {activeChar.emoji}
+          </div>
+          <div>
+            <p style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-primary)' }}>{activeChar.name}</p>
+            <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{activeChar.description}</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            if (isSpeaking) { stopSpeaking(); setIsSpeaking(false) }
+            else { setIsSpeaking(true); speakAsCharacter(current?.question, voiceId, () => setIsSpeaking(false)) }
+          }}
+          style={{
+            width: 32, height: 32, borderRadius: '50%', border: 'none',
+            background: isSpeaking ? activeChar.accentColor : 'var(--bg-hover)',
+            color: isSpeaking ? '#fff' : 'var(--text-muted)',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transition: 'all 0.2s',
+          }}
+          title={isSpeaking ? 'Stop speaking' : 'Replay question'}
+        >
+          {isSpeaking ? <VolumeX size={14} /> : <Volume2 size={14} />}
+        </button>
+      </motion.div>
+
       {/* AI understood badge */}
       {extracted?.summary && (
         <motion.div
@@ -241,6 +386,7 @@ export default function AIQuestionFlow({ questions = [], extracted, onComplete, 
               question={current}
               onAnswer={advance}
               onSkip={() => advance(null)}
+              onBack={handleBack}
             />
           </motion.div>
         </AnimatePresence>

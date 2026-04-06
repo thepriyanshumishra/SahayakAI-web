@@ -54,13 +54,15 @@ export default function NotificationBell() {
         }}
       >
         <Bell 
-          size={20} 
+          size={22} 
+          strokeWidth={2.5}
           style={{ 
-            color: unreadCount > 0 ? '#1B4332' : 'var(--text-primary)',
+            color: unreadCount > 0 ? 'var(--brand-primary)' : 'var(--text-secondary)',
             display: 'block',
             position: 'relative',
             zIndex: 10,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            transition: 'color 0.3s'
           }} 
         />
         {unreadCount > 0 && (
@@ -96,25 +98,34 @@ export default function NotificationBell() {
               background: 'white'
             }}
           >
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--text-primary)' }}>System Broadcasts</p>
+            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(74,103,242,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--brand-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', flexShrink: 0 }}>
+                  <Bell size={16} strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p style={{ fontWeight: 900, fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0 }}>System Broadcasts</p>
+                  {unreadCount > 0 && <p style={{ fontSize: '0.65rem', color: 'var(--brand-primary)', fontWeight: 800, margin: 0 }}>{unreadCount} NEW TRANSMISSIONS</p>}
+                </div>
+              </div>
               {unreadCount > 0 && (
                 <button
-                  style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--brand-primary)', background: 'none', border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}
+                  style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', textTransform: 'uppercase', letterSpacing: 1 }}
                   onClick={() => notifications.filter(n => !n.read).forEach(n => handleMarkRead(n))}
                 >
-                  Clear All
+                  Clear
                 </button>
               )}
             </div>
 
             <div style={{ maxHeight: 400, overflowY: 'auto' }}>
               {notifications.length === 0 ? (
-                <div style={{ padding: 60, textAlign: 'center' }}>
-                  <div style={{ width: 64, height: 64, background: 'var(--bg-base)', borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                    <Bell size={32} color="var(--border-default)" />
+                <div style={{ padding: '80px 40px', textAlign: 'center' }}>
+                  <div style={{ width: 80, height: 80, background: 'var(--bg-hover)', borderRadius: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', boxShadow: 'inset 0 0 20px rgba(0,0,0,0.02)' }}>
+                    <Bell size={40} color="var(--text-muted)" style={{ opacity: 0.4 }} strokeWidth={1.5} />
                   </div>
-                  <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-muted)' }}>No transmissions found</p>
+                  <p style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: 6 }}>All caught up!</p>
+                  <p style={{ fontWeight: 500, fontSize: '0.8rem', color: 'var(--text-muted)', maxWidth: 200, margin: '0 auto' }}>You have no new transmissions at the moment.</p>
                 </div>
               ) : (
                 notifications.slice(0, 20).map((n) => (

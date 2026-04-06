@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Paperclip, Mic, Send, Sparkles, Zap } from 'lucide-react'
+import { Mic, ArrowUp, Sparkles, Zap, AudioLines } from 'lucide-react'
 
 const PLACEHOLDERS = [
   'Describe the mission... e.g. flood relief at Sector 14',
@@ -23,15 +23,19 @@ const letterVariants = {
   },
 }
 
-export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
-  const [phIndex, setPhIndex] = useState(0)
-  const [showPh, setShowPh] = useState(true)
-  const [active, setActive] = useState(false)
-  const [urgent, setUrgent] = useState(false)
-  const wrapperRef = useRef(null)
-  const textareaRef = useRef(null)
+export default function AIChatInput({ onSubmit, onVoiceChat, value, onChange }) {
+  const [phIndex, setPhIndex]   = useState(0)
+  const [showPh, setShowPh]     = useState(true)
+  const [active, setActive]     = useState(false)
+  const [urgent, setUrgent]     = useState(false)
+  const [isListening, setIsListening] = useState(false)
+  const wrapperRef    = useRef(null)
+  const textareaRef   = useRef(null)
+  const recognitionRef = useRef(null)
 
-  // Cycle placeholder
+  const hasText = value && value.trim().length > 0
+
+  // ── Cycle placeholder ────────────────────────────────────────
   useEffect(() => {
     if (active || value) return
     const id = setInterval(() => {
@@ -41,16 +45,16 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
     return () => clearInterval(id)
   }, [active, value])
 
-  // Auto-expand textarea height
+  // ── Auto-expand textarea ─────────────────────────────────────
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto'
-      const newHeight = Math.min(textareaRef.current.scrollHeight, 240) // cap at 240px
+      const newHeight = Math.min(textareaRef.current.scrollHeight, 240)
       textareaRef.current.style.height = `${newHeight}px`
     }
   }, [value, active])
 
-  // Click outside to collapse
+  // ── Click outside to collapse ────────────────────────────────
   useEffect(() => {
     const handler = (e) => {
       if (wrapperRef.current && !wrapperRef.current.contains(e.target) && !value) setActive(false)
@@ -59,10 +63,48 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
     return () => document.removeEventListener('mousedown', handler)
   }, [value])
 
+  // ── Voice-to-text (small mic icon) ──────────────────────────
+  const toggleVoiceToText = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) { alert('Speech recognition not supported in this browser.'); return }
+
+    if (isListening) {
+      recognitionRef.current?.stop()
+      setIsListening(false)
+      return
+    }
+
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'en-IN'
+    recognition.continuous = false
+    recognition.interimResults = false
+
+    recognition.onstart  = () => setIsListening(true)
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript
+      onChange?.(value ? value + ' ' + transcript : transcript)
+      setActive(true)
+    }
+    recognition.onend    = () => setIsListening(false)
+    recognition.onerror  = () => setIsListening(false)
+
+    recognition.start()
+    recognitionRef.current = recognition
+  }
+
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey && value.trim()) {
+    if (e.key === 'Enter' && !e.shiftKey && hasText) {
       e.preventDefault()
       onSubmit?.(value, urgent)
+    }
+  }
+
+  const handleMainBtnClick = (e) => {
+    e.stopPropagation()
+    if (hasText) {
+      onSubmit?.(value, urgent)
+    } else {
+      onVoiceChat?.()
     }
   }
 
@@ -70,7 +112,10 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
     <motion.div
       ref={wrapperRef}
       onClick={() => setActive(true)}
-      animate={active || value ? { minHeight: 120, height: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' } : { minHeight: 64, height: 64, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}
+      animate={active || value
+        ? { minHeight: 120, height: 'auto', boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }
+        : { minHeight: 64, height: 64, boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }
+      }
       layout
       transition={{ type: 'spring', stiffness: 120, damping: 18 }}
       style={{
@@ -78,21 +123,15 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
         borderRadius: 28,
         background: '#fff',
         border: '1.5px solid var(--border-subtle)',
-        overflow: 'hidden',
+        overflow: 'visible',
         cursor: 'text',
+        position: 'relative',
       }}
     >
-      {/* Input Row */}
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, padding: '10px 12px' }}>
-        <button
-          type="button"
-          style={{ padding: 10, marginBottom: 2, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)' }}
-          title="Attach file"
-        >
-          <Paperclip size={18} />
-        </button>
+      {/* ── Input Row ── */}
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, padding: '10px 12px' }}>
 
-        {/* Text input with animated placeholder */}
+        {/* Text input area */}
         <div style={{ flex: 1, position: 'relative', marginBottom: 6 }}>
           <textarea
             ref={textareaRef}
@@ -121,7 +160,7 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
           />
           {/* Animated placeholder */}
           {!active && !value && (
-            <div style={{ position: 'absolute', left: 0, top: 4, pointerEvents: 'none', zIndex: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
+            <div style={{ position: 'absolute', left: 0, top: 4, right: 8, pointerEvents: 'none', zIndex: 0, overflow: 'hidden', whiteSpace: 'nowrap' }}>
               <AnimatePresence mode="wait">
                 {showPh && (
                   <motion.span
@@ -142,31 +181,102 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
           )}
         </div>
 
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); onMicClick?.() }}
-          style={{ padding: 10, marginBottom: 2, borderRadius: '50%', border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)' }}
-          title="Voice input"
-        >
-          <Mic size={18} />
-        </button>
+        {/* Right side buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2, flexShrink: 0 }}>
 
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); if (value.trim()) onSubmit?.(value, urgent) }}
-          style={{
-            padding: 10, marginBottom: 2, borderRadius: '50%', border: 'none', cursor: 'pointer',
-            background: value.trim() ? 'var(--brand-primary)' : 'var(--bg-hover)',
-            color: value.trim() ? '#fff' : 'var(--text-muted)',
-            transition: 'all 0.2s',
-          }}
-          title="Send"
-        >
-          <Send size={17} />
-        </button>
+          {/* Small mic — voice-to-text */}
+          <motion.button
+            type="button"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={(e) => { e.stopPropagation(); toggleVoiceToText() }}
+            title={isListening ? 'Stop listening' : 'Voice to text'}
+            style={{
+              width: 36, height: 36,
+              borderRadius: '50%',
+              border: 'none',
+              cursor: 'pointer',
+              background: isListening ? 'rgba(239,68,68,0.1)' : 'transparent',
+              color: isListening ? '#ef4444' : 'var(--text-muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative',
+              transition: 'all 0.2s',
+            }}
+          >
+            <Mic size={18} />
+            {isListening && (
+              <motion.span
+                animate={{ scale: [1, 1.7, 1], opacity: [0.5, 0, 0.5] }}
+                transition={{ repeat: Infinity, duration: 1.2 }}
+                style={{
+                  position: 'absolute', inset: -3,
+                  borderRadius: '50%', border: '2px solid #ef4444',
+                  pointerEvents: 'none',
+                }}
+              />
+            )}
+          </motion.button>
+
+          {/* Main action button — voice-to-voice OR send */}
+          <AnimatePresence mode="wait">
+            {!hasText ? (
+              /* EMPTY → Open voice-to-voice chat */
+              <motion.button
+                key="voice-chat-btn"
+                type="button"
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                whileHover={{ scale: 1.07 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleMainBtnClick}
+                title="Start voice-to-voice chat"
+                style={{
+                  width: 42, height: 42,
+                  borderRadius: '50%',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: '#111',
+                  color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                }}
+              >
+                <AudioLines size={18} />
+              </motion.button>
+            ) : (
+              /* HAS TEXT → Send */
+              <motion.button
+                key="send-btn"
+                type="button"
+                initial={{ scale: 0.8, opacity: 0, rotate: -90 }}
+                animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                exit={{ scale: 0.8, opacity: 0, rotate: 90 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                whileHover={{ scale: 1.07 }}
+                whileTap={{ scale: 0.92 }}
+                onClick={handleMainBtnClick}
+                title="Send"
+                style={{
+                  width: 42, height: 42,
+                  borderRadius: '50%',
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: '#111',
+                  color: '#fff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 4px 14px rgba(0,0,0,0.3)',
+                }}
+              >
+                <ArrowUp size={18} strokeWidth={2.5} />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      {/* Expanded row */}
+      {/* ── Expanded Footer ── */}
       <motion.div
         variants={{
           hidden: { opacity: 0, y: 16, pointerEvents: 'none' },
@@ -174,12 +284,11 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
         }}
         initial="hidden"
         animate={active || value ? 'visible' : 'hidden'}
-        className="ai-chat-expanded-footer"
-        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 16px 12px', flexWrap: 'wrap' }}
+        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 14px 12px', flexWrap: 'wrap' }}
       >
+        {/* Urgent toggle */}
         <button
           type="button"
-          className="ai-chat-urgent-btn"
           onClick={(e) => { e.stopPropagation(); setUrgent(u => !u) }}
           style={{
             display: 'flex', alignItems: 'center', gap: 6,
@@ -195,9 +304,9 @@ export default function AIChatInput({ onSubmit, onMicClick, value, onChange }) {
           Mark Urgent
         </button>
 
-        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto' }}>
           <Sparkles size={13} color="var(--brand-primary)" />
-          AI will auto-categorize & prioritize the mission
+          AI will auto-categorize &amp; prioritize
         </span>
       </motion.div>
     </motion.div>

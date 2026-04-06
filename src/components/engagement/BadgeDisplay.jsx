@@ -1,4 +1,5 @@
 import React from 'react'
+import { motion } from 'framer-motion'
 import { BADGES } from '../../utils/xpCalculator.js'
 
 function BadgeDisplay({ earnedBadgeIds = [], compact = false }) {
@@ -27,13 +28,25 @@ function BadgeDisplay({ earnedBadgeIds = [], compact = false }) {
     )
   }
 
+  const containerVars = {
+    hidden: { opacity: 0 },
+    show: { opacity: 1, transition: { staggerChildren: 0.05 } }
+  }
+
+  const itemVars = {
+    hidden: { opacity: 0, scale: 0.8 },
+    show: { opacity: 1, scale: 1, transition: { type: 'spring', damping: 15 } }
+  }
+
   return (
-    <div className="flex gap-3 flex-wrap">
+    <motion.div variants={containerVars} initial="hidden" animate="show" className="flex gap-3 flex-wrap">
       {allBadges.map((b) => {
         const isEarned = earnedBadgeIds.includes(b.id)
         return (
-          <div
+          <motion.div
+            variants={itemVars}
             key={b.id}
+            whileHover={isEarned ? { y: -3, scale: 1.05 } : {}}
             style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
               padding: 'var(--space-3)', borderRadius: 'var(--radius-md)',
@@ -43,6 +56,7 @@ function BadgeDisplay({ earnedBadgeIds = [], compact = false }) {
               filter: isEarned ? 'none' : 'grayscale(1)',
               minWidth: 80,
               cursor: 'default',
+              transition: 'background 0.3s, border 0.3s, filter 0.8s'
             }}
             title={b.desc}
           >
@@ -50,10 +64,10 @@ function BadgeDisplay({ earnedBadgeIds = [], compact = false }) {
             <p className="text-xs font-semibold" style={{ color: isEarned ? 'var(--brand-gold)' : 'var(--text-muted)', textAlign: 'center' }}>
               {b.name}
             </p>
-          </div>
+          </motion.div>
         )
       })}
-    </div>
+    </motion.div>
   )
 }
 

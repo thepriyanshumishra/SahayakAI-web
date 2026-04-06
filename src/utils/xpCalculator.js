@@ -59,6 +59,11 @@ export function xpProgressPercent(totalXP) {
   return Math.round(((totalXP - current) / (next - current)) * 100)
 }
 
+export const LEVEL_NAMES = [
+  '', 'Initiate', 'Operator', 'Coordinator', 'Specialist',
+  'Elite', 'Champion', 'Legend', 'Master', 'Guardian', 'Nexus Guardian'
+]
+
 /**
  * Badge definitions
  */

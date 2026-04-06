@@ -17,6 +17,7 @@ import DuplicateWarning from '../../components/tasks/DuplicateWarning.jsx'
 import AIChatInput from '../../components/ui/AIChatInput.jsx'
 import VoiceChat from '../../components/ui/VoiceChat.jsx'
 import AIQuestionFlow from '../../components/ui/AIQuestionFlow.jsx'
+import { useVoiceCharacter } from '../../components/ui/VoiceSelector.jsx'
 import { ShieldAlert, Mail } from 'lucide-react'
 
 // ─── Constants ────────────────────────────────────────────────
@@ -180,6 +181,7 @@ export default function CreateTaskPage() {
   const [questionAnswers, setQuestionAnswers] = useState({})
   const [resolvedLocation, setResolvedLocation] = useState(null) // { address, lat, lng }
   const [mediaFiles, setMediaFiles]       = useState([])
+  const { voiceId }                       = useVoiceCharacter()
 
   // Shared form state
   const [form, setForm] = useState({
@@ -380,12 +382,21 @@ export default function CreateTaskPage() {
         {showVoice && (
           <VoiceChat
             onClose={() => setShowVoice(false)}
-            onTranscript={(text) => {
-              if (text) {
-                if (mode === 'ai') setChatValue(text)
-                else up('description', text)
-              }
+            onComplete={(payload) => {
               setShowVoice(false)
+              if (payload) {
+                if (payload.extracted?.category) up('category', payload.extracted.category)
+                if (payload.extracted?.volunteersNeeded) up('requiredVolunteers', payload.extracted.volunteersNeeded)
+                if (payload.extracted?.location) {
+                  up('address', payload.extracted.location)
+                  setResolvedLocation({ address: payload.extracted.location })
+                }
+                if (payload.extracted?.summary) up('description', payload.extracted.summary)
+
+                handleQuestionsComplete(payload)
+                setAiPhase('review')
+                setStep(2) // Jump to review
+              }
             }}
           />
         )}
@@ -500,7 +511,7 @@ export default function CreateTaskPage() {
                       value={chatValue}
                       onChange={setChatValue}
                       onSubmit={handleAISubmit}
-                      onMicClick={() => setShowVoice(true)}
+                      onVoiceChat={() => setShowVoice(true)}
                     />
                     {error && (
                       <div style={{ marginTop: 16, padding: '12px 16px', borderRadius: 12, background: 'var(--priority-high-bg)', border: '1px solid var(--priority-high)' }}>
@@ -532,6 +543,7 @@ export default function CreateTaskPage() {
                       extracted={groqData.extracted}
                       onComplete={handleQuestionsComplete}
                       onBack={() => setAiPhase('chat')}
+                      voiceId={voiceId}
                     />
                   </motion.div>
                 )}
@@ -728,7 +740,14 @@ export default function CreateTaskPage() {
               )}
 
               <NavRow
-                onBack={() => mode === 'ai' ? setStep(1) : setStep(3)}
+                onBack={() => {
+                  if (mode === 'ai') {
+                    setStep(1)
+                    setAiPhase(groqData?.questions?.length ? 'questions' : 'chat')
+                  } else {
+                    setStep(3)
+                  }
+                }}
                 onNext={handleDeploy}
                 nextLabel="Deploy Mission"
                 loading={loading}

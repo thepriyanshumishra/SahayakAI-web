@@ -1,12 +1,7 @@
 import React from 'react'
 import { motion } from 'framer-motion'
 import { Zap, Trophy, Star } from 'lucide-react'
-import { getLevel, xpProgressPercent, xpForNextLevel } from '../../utils/xpCalculator.js'
-
-const LEVEL_NAMES = [
-  '', 'Newcomer', 'Helper', 'Contributor', 'Dedicated',
-  'Champion', 'Hero', 'Legend', 'Master', 'Elite', 'Guardian'
-]
+import { getLevel, xpProgressPercent, xpForNextLevel, LEVEL_NAMES } from '../../utils/xpCalculator.js'
 
 function XPBar({ xp = 0, compact = false }) {
   const level = getLevel(xp)

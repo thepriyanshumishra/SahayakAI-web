@@ -9,11 +9,9 @@ import {
 import useAuthStore from '../../store/useAuthStore.js'
 import XPBar from '../../components/engagement/XPBar.jsx'
 import BadgeDisplay from '../../components/engagement/BadgeDisplay.jsx'
-import { getLevel } from '../../utils/xpCalculator.js'
+import { getLevel, LEVEL_NAMES } from '../../utils/xpCalculator.js'
 import { verifyPhoneCallable } from '../../services/authService.js'
 import Avatar from '../../components/common/Avatar.jsx'
-
-const LEVEL_NAMES = ['', 'Initiate', 'Operator', 'Coordinator', 'Specialist', 'Elite', 'Legend', 'Nexus Guardian']
 
 /* ── Phone Verification Modal ──────────────────────────────── */
 function PhoneVerificationModal({ profile, onVerified, onClose }) {
@@ -496,30 +494,27 @@ export default function ProfilePage() {
                 initial={{ opacity: 0, y: 16 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 }}
-                style={{
-                  background: 'var(--bg-surface)',
-                  borderRadius: 24, padding: 28,
-                  border: '1px solid var(--border-subtle)',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.04)'
+                onClick={() => {
+                   const newXP = (profile?.xp || 0) + 125;
+                   const newBadges = [...(profile?.badges || [])];
+                   if (newXP >= 100 && !newBadges.includes('first_task')) newBadges.push('first_task');
+                   if (newXP >= 300 && !newBadges.includes('medic_1')) newBadges.push('medic_1');
+                   if (newXP >= 800 && !newBadges.includes('night_owl')) newBadges.push('night_owl');
+                   setProfile({
+                     ...profile, 
+                     xp: newXP, 
+                     badges: newBadges, 
+                     totalTasksCompleted: (profile?.totalTasksCompleted || 0) + 1
+                   });
                 }}
+                style={{ cursor: 'pointer' }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-                  <div>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--brand-gold)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>
-                      ⚡ Progression
-                    </p>
-                    <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', fontWeight: 700, margin: 0 }}>
-                      Rank: {levelName}
-                    </h3>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--brand-primary)', lineHeight: 1 }}>
-                      {profile?.xp || 0}
-                    </p>
-                    <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: 1 }}>TOTAL XP</p>
+                <div style={{ position: 'relative' }}>
+                  <XPBar xp={profile?.xp || 0} />
+                  <div style={{ position: 'absolute', top: 24, right: 24, fontSize: '0.65rem', fontWeight: 800, color: 'var(--brand-gold)', opacity: 0.5 }}>
+                    TAP DEV DEMO 🌱
                   </div>
                 </div>
-                <XPBar xp={profile?.xp || 0} />
               </motion.div>
 
               {/* Skills & Badges */}
@@ -562,7 +557,7 @@ export default function ProfilePage() {
                     <Award size={16} color="var(--brand-gold)" />
                     Badges
                   </p>
-                  <BadgeDisplay earnedBadgeIds={profile?.badges || []} compact />
+                  <BadgeDisplay earnedBadgeIds={profile?.badges || []} />
                 </div>
               </motion.div>
             </>

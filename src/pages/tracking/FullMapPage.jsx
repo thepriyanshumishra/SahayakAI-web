@@ -20,7 +20,7 @@ const MODES = [
 ]
 
 /* ── Turn instruction → icon mapping ───────────────────────── */
-function TurnIcon({ inst, size = 32 }) {
+function TurnIcon({ inst, size = 32, color = "#fff" }) {
   const s = (inst || '').toLowerCase()
   const ic = s.includes('left')  ? ArrowUpLeft
            : s.includes('right') ? ArrowUpRight
@@ -28,7 +28,7 @@ function TurnIcon({ inst, size = 32 }) {
            : s.includes('merge') ? MoveRight
            : MoveUp
   const Icon = ic
-  return <Icon size={size} color="#fff" strokeWidth={2.5} />
+  return <Icon size={size} color={color} strokeWidth={2.5} />
 }
 
 /* ── Autocomplete input ─────────────────────────────────────── */
@@ -153,6 +153,7 @@ export default function FullMapPage() {
   const [traffic,     setTraffic]     = useState(false)
   const [mapType,     setMapType]     = useState('roadmap')
   const [stepsOpen,   setStepsOpen]   = useState(false)
+  const [navStepsOpen, setNavStepsOpen] = useState(false)
   const [locating,    setLocating]    = useState(false)
   const [muted,       setMuted]       = useState(false)
 
@@ -161,6 +162,9 @@ export default function FullMapPage() {
   const [curStep,     setCurStep]     = useState(0)
   const [userPos,     setUserPos]     = useState(null)
   const [reCentred,   setReCentred]   = useState(true)
+  const [isOffline,   setIsOffline]   = useState(typeof navigator !== 'undefined' ? !navigator.onLine : false)
+  const [isOffRoute,  setIsOffRoute]  = useState(false)
+  const [hasArrived,  setHasArrived]  = useState(false)
 
   /* ── Input state ────────────────────────── */
   const [origin, setOrigin] = useState({ address: initOrig, coords: initOrigC })
@@ -193,6 +197,18 @@ export default function FullMapPage() {
     const loc = await geocode(pt.address)
     return { location: loc }
   }
+
+  /* ── Offline Listener ───────────────────────── */
+  useEffect(() => {
+    const onOnline = () => setIsOffline(false)
+    const onOffline = () => setIsOffline(true)
+    window.addEventListener('online', onOnline)
+    window.addEventListener('offline', onOffline)
+    return () => {
+      window.removeEventListener('online', onOnline)
+      window.removeEventListener('offline', onOffline)
+    }
+  }, [])
 
   /* ── Map init ───────────────────────────── */
   useEffect(() => {
@@ -244,8 +260,8 @@ export default function FullMapPage() {
         ...wps.filter(w => w.address || w.coords).map(buildWP)
       ])
 
-      /* Modern Routes API only */
       if (routeSvcRef.current) {
+        /* Modern Routes API */
         const method = routeSvcRef.current.computeRoutes || routeSvcRef.current.route
         const resp = await method.call(routeSvcRef.current, {
           origin: origWP, destination: dstWP, intermediates: wpsWP,
@@ -281,7 +297,53 @@ export default function FullMapPage() {
           })
         }
       } else {
-        throw new Error('Modern routing unavailable.')
+        /* Fallback: Classic Directions API */
+        const dirSvc = new g.DirectionsService()
+        const resp = await new Promise((res, rej) => {
+          dirSvc.route({
+            origin: origWP.location,
+            destination: dstWP.location,
+            waypoints: wpsWP.map(wp => ({ location: wp.location, stopover: true })),
+            travelMode: g.TravelMode[tMode === 'BICYCLE' ? 'BICYCLING' : tMode === 'WALK' ? 'WALKING' : tMode] || 'DRIVING',
+          }, (result, status) => {
+            if (status === 'OK') res(result)
+            else rej(new Error('Directions failed: ' + status))
+          })
+        })
+
+        if (resp.routes?.length) {
+          const r = resp.routes[0]
+          if (polyRef.current) polyRef.current.setMap(null)
+          
+          polyRef.current = new g.Polyline({
+            path: r.legs.flatMap(l => l.steps.flatMap(s => s.path)),
+            strokeColor: '#1a73e8',
+            strokeWeight: 6,
+            strokeOpacity: 1,
+            map
+          })
+
+          map.fitBounds(r.bounds, 60)
+
+          const stepsData = r.legs.flatMap(l => (l.steps || []).map(s => ({
+            inst: s.instructions?.replace(/<[^>]*>/g, '') || 'Continue',
+            dist: s.distance?.text || '0 m',
+            dur:  s.duration?.text || '0 min',
+            distM: s.distance?.value || 0,
+          })))
+          stepsRef.current = stepsData
+
+          const totalDurSecs = r.legs.reduce((acc, l) => acc + (l.duration?.value || 0), 0)
+          const totalDistM = r.legs.reduce((acc, l) => acc + (l.distance?.value || 0), 0)
+
+          setRoute({
+            duration: parseDur(totalDurSecs.toString()),
+            durationSecs: totalDurSecs,
+            distance: parseDist(totalDistM),
+            distanceM: totalDistM,
+            steps: stepsData,
+          })
+        }
       }
 
       /* Markers */
@@ -410,12 +472,23 @@ export default function FullMapPage() {
           map.panTo({ lat, lng })
         }
 
+        // Off-route check logic
+        if (polyRef.current && window.google?.maps?.geometry?.poly) {
+          const pt = new window.google.maps.LatLng(lat, lng)
+          // 0.0003 is roughly equivalent to 30m tolerance for off-edge detection
+          const onPath = window.google.maps.geometry.poly.isLocationOnEdge(pt, polyRef.current, 0.0003)
+          setIsOffRoute(!onPath)
+        }
+
         // Logic for auto-advancing steps
         setCurStep(prev => {
           const steps = stepsRef.current
           if (!steps || prev >= steps.length - 1) return prev
           const distToDest = haversine({ lat, lng }, dest.coords)
-          if (distToDest < 25) return steps.length - 1
+          if (distToDest < 30) {
+            setHasArrived(true)
+            return steps.length - 1
+          }
           const threshold = Math.max(40, accuracy ?? 40)
           if (steps[prev]?.distM < threshold) return Math.min(prev + 1, steps.length - 1)
           return prev
@@ -425,6 +498,7 @@ export default function FullMapPage() {
         let msg = "GPS signal weak — checking sensors..."
         if (err.code === 1) msg = "Location access denied. Please enable GPS and refresh."
         if (err.code === 3) msg = "Waiting for high-accuracy GPS signal..."
+        if (isOffline) msg = "Offline navigation active. Waiting for better GPS signal."
         setError(msg)
       },
       { enableHighAccuracy: true, maximumAge: 500, timeout: 20000 }
@@ -437,6 +511,8 @@ export default function FullMapPage() {
   /* ── Stop Journey ───────────────────────── */
   const stopJourney = () => {
     setNavMode(false)
+    setHasArrived(false)
+    setIsOffRoute(false)
     if (window._navCleanup) window._navCleanup()
     if (watchIdRef.current != null) {
       navigator.geolocation.clearWatch(watchIdRef.current)
@@ -578,8 +654,26 @@ export default function FullMapPage() {
               <button onClick={() => setMuted(p=>!p)} style={navFAB}>{muted?<VolumeX size={18} color="rgba(0,0,0,0.55)"/>:<Volume2 size={18} color="rgba(0,0,0,0.55)"/>}</button>
             </motion.div>
 
+            {/* Status Overlays */}
+            <div style={{ position: 'absolute', top: isMobile ? 120 : 140, left: 0, right: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, pointerEvents: 'none', zIndex: 201 }}>
+              <AnimatePresence>
+                {isOffline && (
+                  <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -20, opacity: 0 }}
+                    style={{ background: '#f59f00', color: '#fff', padding: '8px 16px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 12px rgba(245,159,0,0.4)', pointerEvents: 'all' }}>
+                    <AlertTriangle size={16} /> Offline Navigation Active
+                  </motion.div>
+                )}
+                {isOffRoute && !hasArrived && (
+                  <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                    style={{ background: '#e53935', color: '#fff', padding: '8px 16px', borderRadius: 20, fontSize: '0.8rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 8, boxShadow: '0 4px 12px rgba(229,57,53,0.4)', pointerEvents: 'all' }}>
+                    <RotateCcw size={16} /> You are off route
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
             {/* Step progress dots */}
-            {(route?.steps?.length||0) > 1 && (
+            {(route?.steps?.length||0) > 1 && !hasArrived && (
               <div style={{ position:'absolute', bottom: isMobile?170:180, left:'50%', transform:'translateX(-50%)', display:'flex', gap:5, zIndex:200 }}>
                 {route.steps.slice(0, Math.min(7, route.steps.length)).map((_,i) => (
                   <div key={i} style={{ width: i===curStep?18:6, height:6, borderRadius:3, background: i===curStep?'#1a73e8':'rgba(255,255,255,0.55)', transition:'all 0.3s', boxShadow:'0 1px 4px rgba(0,0,0,0.3)' }}/>
@@ -592,17 +686,21 @@ export default function FullMapPage() {
               key="nav-bottom"
               initial={{ y: 120 }} animate={{ y: 0 }} exit={{ y: 120 }}
               transition={{ type: 'spring', damping: 24 }}
-              style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:200, background:'#fff', borderRadius:'20px 20px 0 0', boxShadow:'0 -8px 32px rgba(0,0,0,0.18)', padding: isMobile?'16px 18px 28px':'20px 28px 30px' }}
+              style={{ position:'absolute', bottom:0, left:0, right:0, zIndex:200, background:'#fff', borderRadius:'24px 24px 0 0', boxShadow:'0 -8px 32px rgba(0,0,0,0.18)', padding: isMobile?'16px 18px 28px':'20px 28px 30px', display: 'flex', flexDirection: 'column', maxHeight: '85vh' }}
             >
-              <div style={{ width:36, height:4, background:'#e0e0e0', borderRadius:2, margin:'0 auto 14px' }}/>
-              <div style={{ display:'flex', alignItems:'center', gap:14 }}>
+              <div 
+                 onClick={() => setNavStepsOpen(p => !p)} 
+                 style={{ width: 44, height: 5, background: '#e0e0e0', borderRadius: 3, margin: '0 auto 16px', cursor: 'pointer' }}
+              />
+              
+              <div style={{ display:'flex', alignItems:'center', gap:14, flexShrink: 0 }}>
                 {/* Exit */}
                 <button onClick={stopJourney} style={{ width:52, height:52, borderRadius:'50%', border:'2px solid #e8e8e8', background:'#fff', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 2px 8px rgba(0,0,0,0.1)' }}>
                   <X size={20} color="#555"/>
                 </button>
 
                 {/* ETA */}
-                <div style={{ flex:1 }}>
+                <div style={{ flex:1, cursor: 'pointer' }} onClick={() => setNavStepsOpen(p => !p)}>
                   <div style={{ display:'flex', alignItems:'baseline', gap:5 }}>
                     <span style={{ color:'#1a8049', fontWeight:900, fontSize: isMobile?'1.7rem':'2rem', lineHeight:1 }}>
                       {route?.duration?.split(' ')[0]}
@@ -623,16 +721,57 @@ export default function FullMapPage() {
                 </button>
               </div>
 
+              {/* Expandable Steps List */}
+              <AnimatePresence>
+                {navStepsOpen && (
+                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} style={{ overflowY: 'auto', flex: 1, marginTop: 16 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderTop: '1px solid #f0f0f0', paddingTop: 10 }}>
+                       {route?.steps?.map((step, i) => (
+                           <div key={i} onClick={() => setCurStep(i)} style={{ padding: '14px 10px', borderBottom: i < route.steps.length - 1 ? '1px solid #f5f5f5' : 'none', display: 'flex', gap: 14, alignItems: 'flex-start', cursor: 'pointer', background: i === curStep ? 'rgba(26, 128, 73, 0.05)' : 'transparent', borderRadius: 12, transition: 'background 0.2s' }}>
+                              <div style={{ width: 32, height: 32, borderRadius: '50%', background: i === curStep ? 'rgba(26, 128, 73, 0.15)' : '#f0f0f0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                                <TurnIcon inst={step.inst} size={16} color={i === curStep ? '#1a8049' : '#888'} />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ color: i === curStep ? '#1a8049' : i < curStep ? '#aaa' : '#333', fontSize: '0.9rem', fontWeight: i === curStep ? 800 : 700, lineHeight: 1.4 }}>{step.inst}</div>
+                                <div style={{ color: i < curStep ? '#ccc' : '#888', fontSize: '0.75rem', marginTop: 4, fontWeight: 600 }}>{step.dist} · {step.dur}</div>
+                              </div>
+                           </div>
+                       ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
               {/* Action row */}
-              <div style={{ display:'flex', gap:10, marginTop:12 }}>
+              <div style={{ display:'flex', gap:10, marginTop:16, flexShrink: 0 }}>
                 <button style={navActionBtn} onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&destination=${dest.coords?.lat},${dest.coords?.lng}`,'_blank')}>
-                  <ExternalLink size={13}/> Open in Maps
+                  <ExternalLink size={14}/> Open in Maps
                 </button>
-                <button style={navActionBtn}>
-                  <AlertTriangle size={13}/> Report
+                <button style={navActionBtn} onClick={() => setNavStepsOpen(p => !p)}>
+                  <Layers size={14}/> {navStepsOpen ? 'Hide Steps' : 'View Steps'}
                 </button>
               </div>
             </motion.div>
+
+            {/* Arrived Overlay */}
+            <AnimatePresence>
+              {hasArrived && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  style={{ position: 'fixed', inset: 0, background: 'rgba(26,107,65,0.92)', backdropFilter: 'blur(12px)', zIndex: 999, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', padding: 20 }}>
+                   <motion.div initial={{ scale: 0.5, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} transition={{ type: 'spring', damping: 15 }} style={{ width: 110, height: 110, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, boxShadow: '0 0 50px rgba(255,255,255,0.4)' }}>
+                     <MapPin size={52} color="#1a6b41" fill="#1a6b41" style={{ marginTop: -4 }} />
+                   </motion.div>
+                   <h1 style={{ margin: 0, fontSize: '2.8rem', fontWeight: 900, textAlign: 'center', letterSpacing: '-1px' }}>You've Arrived!</h1>
+                   <p style={{ fontSize: '1.15rem', opacity: 0.85, marginTop: 14, textAlign: 'center', maxWidth: 300, lineHeight: 1.5 }}>You have reached your destination securely.</p>
+                   
+                   <button onClick={stopJourney} style={{ marginTop: 44, padding: '16px 48px', borderRadius: 30, background: '#fff', color: '#1a6b41', fontWeight: 800, fontSize: '1.15rem', border: 'none', cursor: 'pointer', boxShadow: '0 8px 32px rgba(0,0,0,0.25)', transition: 'transform 0.2s' }}
+                     onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.03)'}
+                     onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}>
+                     Finish Journey
+                   </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </AnimatePresence>

@@ -43,6 +43,14 @@ export default function ActiveTaskPage() {
   const [success, setSuccess] = useState(null)
   const [activeTab, setActiveTab] = useState('map') 
   const [callId] = useState(() => `call_${Date.now()}`)
+  const [sheetOpen, setSheetOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= 900)
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth <= 900)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const assignment = assignments[0] || null
   useLiveTracking(assignment?.id, !!assignment && !assignment.isRemote)
@@ -179,83 +187,147 @@ export default function ActiveTaskPage() {
              </div>
           </div>
 
-          <aside style={{ display: 'flex', flexDirection: 'column', gap: 24, position: 'sticky', top: 24 }}>
-             <div className="profile-left-card p-responsive">
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, color: 'var(--brand-primary)', letterSpacing: '-0.01em' }}>
-                   <ShieldCheck size={24} strokeWidth={2.5} /> Mission Protocol
-                </h3>
-                {isPending ? (
-                   <div style={{ textAlign: 'center', padding: '32px 0' }}>
-                      <div style={{ width: 72, height: 72, background: 'var(--bg-hover)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
-                        <Clock size={36} color="var(--brand-gold)" />
-                      </div>
-                      <p style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Awaiting Validation</p>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.5 }}>NGO Mission Control is currently reviewing your mission evidence. Please stay on standby.</p>
-                   </div>
-                ) : (
-                   <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
-                      <div className="form-group">
-                         <label className="label" style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 12, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Evidence Capture (Optional)</label>
-                         <div style={{ 
-                            position: 'relative', width: '100%', height: 160, 
-                            background: 'var(--bg-base)', border: '2px dashed var(--border-default)', 
-                            borderRadius: 24, display: 'flex', flexDirection: 'column', 
-                            alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
-                            transition: 'all 0.25s ease',
-                            overflow: 'hidden'
-                         }} className="upload-zone">
-                            <input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files[0])} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 2 }} />
-                            {photoFile ? (
-                               <div style={{ textAlign: 'center', padding: 20 }}>
-                                 <Camera color="var(--brand-secondary)" size={28} /> 
-                                 <p style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 10, color: 'var(--text-primary)', wordBreak: 'break-all' }}>{photoFile.name}</p>
-                                 <p style={{ fontSize: '0.75rem', color: 'var(--brand-secondary)', marginTop: 4, fontWeight: 600 }}>Tap to change photo</p>
-                               </div>
-                            ) : (
-                               <>
-                                 <div style={{ width: 48, height: 48, background: 'var(--bg-surface)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, boxShadow: 'var(--shadow-sm)' }}>
-                                   <Upload color="var(--text-muted)" size={20} />
-                                 </div>
-                                 <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Upload completion photo</p>
-                                 <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>PNG, JPG up to 10MB</p>
-                               </>
-                            )}
-                         </div>
-                      </div>
-                      <button 
-                        className="btn btn-primary" 
-                        style={{ 
-                          width: '100%', height: 58, fontWeight: 900, 
-                          background: 'var(--brand-primary)', border: 'none',
-                          boxShadow: 'var(--shadow-brand)', borderRadius: 20,
-                          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
-                          fontSize: '1rem', letterSpacing: '0.02em'
-                        }} 
-                        onClick={handleComplete} 
-                        disabled={completing}
-                      >
-                         {completing ? 'PROCESSING...' : <><CheckCircle2 size={22} /> MARK COMPLETE</>}
-                      </button>
-                   </div>
-                )}
-             </div>
+          {(() => {
+            const protocolContent = (
+              <>
+                 <div className="profile-left-card p-responsive">
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: 900, marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12, color: 'var(--brand-primary)', letterSpacing: '-0.01em' }}>
+                       <ShieldCheck size={24} strokeWidth={2.5} /> Mission Protocol
+                    </h3>
+                    {isPending ? (
+                       <div style={{ textAlign: 'center', padding: '32px 0' }}>
+                          <div style={{ width: 72, height: 72, background: 'var(--bg-hover)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                            <Clock size={36} color="var(--brand-gold)" />
+                          </div>
+                          <p style={{ fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)' }}>Awaiting Validation</p>
+                          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: 12, lineHeight: 1.5 }}>NGO Mission Control is currently reviewing your mission evidence. Please stay on standby.</p>
+                       </div>
+                    ) : (
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+                          <div className="form-group">
+                             <label className="label" style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--text-muted)', marginBottom: 12, display: 'block', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Evidence Capture (Optional)</label>
+                             <div style={{ 
+                                position: 'relative', width: '100%', height: 160, 
+                                background: 'var(--bg-base)', border: '2px dashed var(--border-default)', 
+                                borderRadius: 24, display: 'flex', flexDirection: 'column', 
+                                alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+                                transition: 'all 0.25s ease',
+                                overflow: 'hidden'
+                             }} className="upload-zone">
+                                <input type="file" accept="image/*" onChange={e => setPhotoFile(e.target.files[0])} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 2 }} />
+                                {photoFile ? (
+                                   <div style={{ textAlign: 'center', padding: 20 }}>
+                                     <Camera color="var(--brand-secondary)" size={28} /> 
+                                     <p style={{ fontSize: '0.85rem', fontWeight: 700, marginTop: 10, color: 'var(--text-primary)', wordBreak: 'break-all' }}>{photoFile.name}</p>
+                                     <p style={{ fontSize: '0.75rem', color: 'var(--brand-secondary)', marginTop: 4, fontWeight: 600 }}>Tap to change photo</p>
+                                   </div>
+                                ) : (
+                                   <>
+                                     <div style={{ width: 48, height: 48, background: 'var(--bg-surface)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 12, boxShadow: 'var(--shadow-sm)' }}>
+                                       <Upload color="var(--text-muted)" size={20} />
+                                     </div>
+                                     <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Upload completion photo</p>
+                                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 4 }}>PNG, JPG up to 10MB</p>
+                                   </>
+                                )}
+                             </div>
+                          </div>
+                          <button 
+                            className="btn btn-primary" 
+                            style={{ 
+                              width: '100%', height: 58, fontWeight: 900, 
+                              background: 'var(--brand-primary)', border: 'none',
+                              boxShadow: 'var(--shadow-brand)', borderRadius: 20,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12,
+                              fontSize: '1rem', letterSpacing: '0.02em'
+                            }} 
+                            onClick={handleComplete} 
+                            disabled={completing}
+                          >
+                             {completing ? 'PROCESSING...' : <><CheckCircle2 size={22} /> MARK COMPLETE</>}
+                          </button>
+                       </div>
+                    )}
+                 </div>
 
-             <div className="profile-left-card" style={{ padding: 28, background: 'var(--brand-primary)', color: 'white', position: 'relative', overflow: 'hidden', border: 'none' }}>
-                <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
-                <div style={{ position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, background: 'rgba(255,255,255,0.03)', borderRadius: '50%' }} />
-                
-                <p style={{ fontSize: '0.75rem', fontWeight: 800, opacity: 0.7, textTransform: 'uppercase', marginBottom: 16, letterSpacing: '0.08em' }}>REWARD POOL</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-                   <div style={{ width: 52, height: 52, background: 'rgba(255,255,255,0.12)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 12px rgba(255,255,255,0.1)' }}>
-                      <Zap size={28} color="#FFD700" fill="#FFD700" />
-                   </div>
-                   <div>
-                      <p style={{ fontSize: '1.8rem', fontWeight: 900, lineHeight: 1, marginBottom: 6 }}>+450 XP</p>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.85 }}>Lifesaver Protocol Bonus Applied</p>
-                   </div>
-                </div>
-             </div>
-          </aside>
+                 <div className="profile-left-card" style={{ padding: 28, background: 'var(--brand-primary)', color: 'white', position: 'relative', overflow: 'hidden', border: 'none' }}>
+                    <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, background: 'rgba(255,255,255,0.06)', borderRadius: '50%' }} />
+                    <div style={{ position: 'absolute', bottom: -20, left: -20, width: 80, height: 80, background: 'rgba(255,255,255,0.03)', borderRadius: '50%' }} />
+                    
+                    <p style={{ fontSize: '0.75rem', fontWeight: 800, opacity: 0.7, textTransform: 'uppercase', marginBottom: 16, letterSpacing: '0.08em' }}>REWARD POOL</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                       <div style={{ width: 52, height: 52, background: 'rgba(255,255,255,0.12)', borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'inset 0 0 12px rgba(255,255,255,0.1)' }}>
+                          <Zap size={28} color="#FFD700" fill="#FFD700" />
+                       </div>
+                       <div>
+                          <p style={{ fontSize: '1.8rem', fontWeight: 900, lineHeight: 1, marginBottom: 6 }}>+450 XP</p>
+                          <p style={{ fontSize: '0.85rem', fontWeight: 600, opacity: 0.85 }}>Lifesaver Protocol Bonus Applied</p>
+                       </div>
+                    </div>
+                 </div>
+              </>
+            )
+
+            if (isMobile) {
+              return (
+                <>
+                  {/* Floating Action Button to trigger the Bottom Sheet */}
+                  <button 
+                    onClick={() => setSheetOpen(true)}
+                    style={{ 
+                      position: 'fixed', bottom: 24, right: 24, zIndex: 90, 
+                      borderRadius: '50%', width: 64, height: 64, 
+                      background: 'var(--brand-primary)', color: '#fff', 
+                      border: 'none', boxShadow: '0 8px 32px rgba(74, 103, 242, 0.4)', 
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                      cursor: 'pointer' 
+                    }}
+                  >
+                    <ShieldCheck size={28} />
+                  </button>
+
+                  <AnimatePresence>
+                    {sheetOpen && (
+                      <>
+                        {/* Overlay */}
+                        <motion.div 
+                          initial={{ opacity: 0 }} 
+                          animate={{ opacity: 1 }} 
+                          exit={{ opacity: 0 }} 
+                          onClick={() => setSheetOpen(false)} 
+                          style={{ position: 'fixed', inset: 0, background: 'rgba(10,13,20,0.6)', zIndex: 999, backdropFilter: 'blur(4px)' }} 
+                        />
+                        {/* Sheet */}
+                        <motion.div 
+                          initial={{ y: '100%' }} 
+                          animate={{ y: 0 }} 
+                          exit={{ y: '100%' }} 
+                          transition={{ type: 'spring', damping: 25, stiffness: 200 }} 
+                          style={{ 
+                            position: 'fixed', bottom: 0, left: 0, right: 0, 
+                            background: 'var(--bg-base)', borderTopLeftRadius: 28, borderTopRightRadius: 28, 
+                            zIndex: 1000, padding: '24px 20px 40px', maxHeight: '85vh', 
+                            overflowY: 'auto', boxShadow: '0 -10px 40px rgba(0,0,0,0.2)' 
+                          }}
+                        >
+                           <div style={{ width: 44, height: 5, background: 'var(--border-default)', borderRadius: 3, margin: '0 auto 24px' }} />
+                           <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                              {protocolContent}
+                           </div>
+                        </motion.div>
+                      </>
+                    )}
+                  </AnimatePresence>
+                </>
+              )
+            }
+
+            return (
+              <aside style={{ display: 'flex', flexDirection: 'column', gap: 24, position: 'sticky', top: 24 }}>
+                 {protocolContent}
+              </aside>
+            )
+          })()}
        </div>
 
        <VoiceCallModal isOpen={callOpen} onClose={() => setCallOpen(false)} callId={callId} localUserId={user?.uid} localRole="volunteer" partnerName="Mission Command" />

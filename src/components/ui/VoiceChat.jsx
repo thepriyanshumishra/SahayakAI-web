@@ -1,363 +1,400 @@
 import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Mic, Volume2, VolumeX, Sparkles, Loader2, X } from 'lucide-react'
+import { Mic, Volume2, Sparkles, Loader2, X, Power, Menu, Square, Play } from 'lucide-react'
+import { VOICE_CHARACTERS } from '../../config/voiceCharacters'
+import { chatWithAgent } from '../../services/groqMissionService'
 
-export default function VoiceChat({ onClose, onTranscript }) {
-  const [isListening, setIsListening] = useState(false)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [isDone, setIsDone] = useState(false)
-  const [seconds, setSeconds] = useState(0)
-  const [volume, setVolume] = useState(0)
-  const [waveformData, setWaveformData] = useState(Array(28).fill(4))
-  const [particles, setParticles] = useState([])
-  const [liveText, setLiveText] = useState('')   // interim transcript shown live
+// ── Async voice loader — Chrome loads voices asynchronously ──
+const loadVoices = () =>
+  new Promise(resolve => {
+    const v = window.speechSynthesis.getVoices()
+    if (v.length > 0) return resolve(v)
+    window.speechSynthesis.onvoiceschanged = () =>
+      resolve(window.speechSynthesis.getVoices())
+    setTimeout(() => resolve(window.speechSynthesis.getVoices()), 2000)
+  })
 
-  const timerRef = useRef(null)
-  const waveRef = useRef(null)
-  const animRef = useRef(null)
-  const recognitionRef = useRef(null)
-  const finalTranscriptRef = useRef('')
+// ── Unlock Chrome's audio pipeline (macOS silent TTS bug fix) ──
+const unlockAudioContext = async () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    await ctx.resume()
+    const buf = ctx.createBuffer(1, 1, 22050)
+    const src = ctx.createBufferSource()
+    src.buffer = buf
+    src.connect(ctx.destination)
+    src.start(0)
+    await new Promise(r => setTimeout(r, 80))
+  } catch (e) { /* ignore */ }
+}
 
-  // ── Particles ─────────────────────────────────────────────
-  useEffect(() => {
-    const pts = Array.from({ length: 18 }, (_, i) => ({
-      id: i,
-      x: Math.random() * 400, y: Math.random() * 400,
-      vx: (Math.random() - 0.5) * 0.35, vy: (Math.random() - 0.5) * 0.35,
-      opacity: Math.random() * 0.2 + 0.05,
+// ── Pick the best matching voice ─────────────────────────────
+const pickVoice = (voices, char) => {
+  let v = voices.find(x => x.name === char.voiceName)
+  if (v) return v
+  if (char.langCode === 'hi') {
+    v = voices.find(x => x.lang.startsWith('hi'))
+  } else if (char.langCode === 'en-GB') {
+    v = voices.find(x => x.lang.startsWith('en-GB')) ||
+        voices.find(x => ['Daniel', 'Serena', 'Rishi', 'Kate'].includes(x.name))
+  } else {
+    v = voices.find(x => x.lang.startsWith('en-US')) ||
+        voices.find(x => ['Samantha', 'Alex', 'Victoria', 'Karen'].includes(x.name))
+  }
+  return v || (voices.length > 0 ? voices[0] : null)
+}
+
+// ── Core TTS function ─────────────────────────────────────────
+const speakText = async (text, char, onEnd, onBoundary) => {
+  try {
+    const synth = window.speechSynthesis
+    synth.cancel()
+
+    await unlockAudioContext()
+    synth.resume()
+    await new Promise(r => setTimeout(r, 100))
+
+    const voices = await loadVoices()
+    const voice = pickVoice(voices, char)
+
+    const u = new SpeechSynthesisUtterance(text)
+    if (voice) u.voice = voice
+    u.lang = char.langCode === 'hi' ? 'hi-IN' : 'en-US'
+    u.rate = char.rate || 1
+    u.pitch = char.pitch || 1
+    u.volume = 1
+
+    const keepAlive = setInterval(() => {
+      if (synth.speaking) { synth.pause(); synth.resume() }
+      else clearInterval(keepAlive)
+    }, 5000)
+
+    const fuse = setTimeout(() => {
+      clearInterval(keepAlive)
+      synth.cancel()
+      onEnd?.()
+    }, Math.max(text.length * 150, 6000))
+
+    u.onboundary = e => { if (e.name === 'word') onBoundary?.(e.charIndex, e.charLength) }
+    u.onend = () => { clearInterval(keepAlive); clearTimeout(fuse); onEnd?.() }
+    u.onerror = () => { clearInterval(keepAlive); clearTimeout(fuse); onEnd?.() }
+
+    synth.resume()
+    synth.speak(u)
+  } catch (err) {
+    onEnd?.()
+  }
+}
+
+// ── Native Haptic Pop ───────────────────────────────────────
+const playHapticPop = () => {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)()
+    const osc = ctx.createOscillator()
+    const gain = ctx.createGain()
+    osc.connect(gain); gain.connect(ctx.destination)
+    osc.type = 'sine'
+    osc.frequency.setValueAtTime(600, ctx.currentTime)
+    osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.1)
+    gain.gain.setValueAtTime(0, ctx.currentTime)
+    gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02)
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1)
+    osc.start(ctx.currentTime)
+    osc.stop(ctx.currentTime + 0.1)
+  } catch(e) {}
+}
+
+export default function VoiceChat({ onClose, onComplete }) {
+  const [activeChar, setActiveChar] = useState(() => {
+    const saved = localStorage.getItem('sahayak_voice_character')
+    return VOICE_CHARACTERS.find(c => c.id === saved) || VOICE_CHARACTERS[1]
+  })
+
+  const activeCharRef = useRef(activeChar)
+  useEffect(() => { activeCharRef.current = activeChar }, [activeChar])
+
+  const pickChar = char => {
+    localStorage.setItem('sahayak_voice_character', char.id)
+    setActiveChar(char)
+  }
+
+  const [phase, setPhase] = useState('init')
+  const [isPaused, setIsPaused] = useState(false)
+  const [liveText, setLiveText] = useState('')
+  const [statusMsg, setStatusMsg] = useState('Tap Connect to start')
+  const [particles] = useState(() =>
+    Array.from({ length: 16 }, (_, i) => ({
+      id: i, sx: Math.random() * 100, sy: Math.random() * 100,
+      ex: Math.random() * 100, ey: Math.random() * 100,
+      dur: 18 + Math.random() * 20, op: Math.random() * 0.18 + 0.04,
     }))
-    setParticles(pts)
+  )
 
-    const animate = () => {
-      setParticles(p => p.map(pt => ({
-        ...pt,
-        x: (pt.x + pt.vx + 400) % 400,
-        y: (pt.y + pt.vy + 400) % 400,
-      })))
-      animRef.current = requestAnimationFrame(animate)
-    }
-    animRef.current = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(animRef.current)
-  }, [])
+  const recognitionRef = useRef(null)
+  const messagesRef = useRef([])
+  const extractedRef = useRef({})
 
-  // ── Cleanup on unmount ────────────────────────────────────
-  useEffect(() => {
-    return () => {
-      clearInterval(timerRef.current)
-      clearInterval(waveRef.current)
-      recognitionRef.current?.stop()
-      cancelAnimationFrame(animRef.current)
+  useEffect(() => () => {
+    window.speechSynthesis.cancel()
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null
+      recognitionRef.current.stop()
     }
   }, [])
 
-  // ── Start listening ───────────────────────────────────────
-  const startListening = () => {
-    finalTranscriptRef.current = ''
-    setLiveText('')
-    setSeconds(0)
-    setIsListening(true)
+  const startListening = onResult => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SpeechRecognition) return setStatusMsg('Browser not supported')
 
-    // Real timer — fires exactly every 1000ms
-    if (timerRef.current) clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
-      setSeconds(s => s + 1)
-    }, 1000)
+    const rec = new SpeechRecognition()
+    rec.lang = activeCharRef.current.langCode === 'hi' ? 'hi-IN' : 'en-IN'
+    rec.continuous = true
+    rec.interimResults = true
 
-    // Waveform animation — fires fast for visual effect only
-    if (waveRef.current) clearInterval(waveRef.current)
-    waveRef.current = setInterval(() => {
-      setWaveformData(Array(28).fill(0).map(() => Math.random() * 85 + 10))
-      setVolume(Math.random() * 75 + 20)
-    }, 100)
-
-    // Web Speech API (best free engine — built into Chrome/Edge/Safari)
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (SR) {
-      if (recognitionRef.current) recognitionRef.current.stop()
-      const recognition = new SR()
-      recognition.continuous = true
-      recognition.interimResults = true  // show partial results live
-      recognition.lang = 'en-IN'
-      recognition.maxAlternatives = 1
-
-      recognition.onresult = (e) => {
-        let interim = ''
-        let final = ''
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const t = e.results[i][0].transcript
-          if (e.results[i].isFinal) {
-            final += t + ' '
-          } else {
-            interim += t
-          }
-        }
-        if (final) finalTranscriptRef.current += final
-        // Show live interim text
-        setLiveText((finalTranscriptRef.current + interim).trim())
+    rec.onresult = e => {
+      let interim = '', final = ''
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) final += e.results[i][0].transcript
+        else interim += e.results[i][0].transcript
       }
-
-      recognition.onerror = (err) => {
-        console.warn('Speech recognition error:', err.error)
-        if (err.error !== 'no-speech') stopListening()
+      if (final) {
+        setLiveText(final)
+        playHapticPop()
+        onResult(final)
+      } else {
+        setLiveText(interim)
       }
+    }
+    rec.onerror = () => { setLiveText(''); setStatusMsg('Tap mic to retry'); setPhase('idle') }
+    rec.onend = () => { recognitionRef.current = null }
+    rec.start()
+    recognitionRef.current = rec
+  }
 
-      // Auto-stop if engine ends on its own (e.g. silence timeout)
-      recognition.onend = () => {
-        // Only stop if we haven't manually stopped it
-        if (isListening) stopListening()
+  const handleConnect = async () => {
+    setPhase('greeting')
+    setStatusMsg(`${activeChar.name} is speaking…`)
+    messagesRef.current = []
+    extractedRef.current = {}
+    await new Promise(r => setTimeout(r, 800))
+    
+    if (isPaused) return
+    const promptMsg = `Hi, I'm ${activeChar.name}. Tell me about the mission you need help with.`
+    messagesRef.current.push({ role: 'assistant', content: promptMsg })
+    setLiveText(promptMsg)
+
+    await speakText(promptMsg, activeChar, () => {
+      if (isPaused) return
+      setPhase('listening')
+      setStatusMsg('Tell me what happened…')
+      setLiveText('')
+      startListening(handleUserSpeech)
+    }, (idx, len) => {
+      if (!isPaused) setLiveText(promptMsg.slice(0, idx + len))
+    })
+  }
+
+  const togglePause = () => {
+    if (isInit) { handleConnect(); return }
+    if (!isPaused) {
+      setIsPaused(true)
+      window.speechSynthesis.cancel()
+      if (recognitionRef.current) {
+        recognitionRef.current.onresult = null
+        recognitionRef.current.onend = null
+        recognitionRef.current.stop()
       }
-
-      recognition.start()
-      recognitionRef.current = recognition
+    } else {
+      setIsPaused(false)
+      if (phase === 'listening' || phase === 'listening_answer') {
+        startListening(handleUserSpeech)
+      } else if (isSpeaking) {
+        const lastMsg = messagesRef.current[messagesRef.current.length - 1]?.content || liveText
+        speakText(lastMsg, activeCharRef.current, () => {
+          if (isPaused) return
+          setPhase(phase === 'greeting' ? 'listening' : 'listening_answer')
+          startListening(handleUserSpeech)
+        }, (idx, len) => setLiveText(lastMsg.slice(0, idx+len)))
+      }
     }
   }
 
-  // ── Stop listening ────────────────────────────────────────
-  const stopListening = async () => {
-    // Clear intervals immediately to stop timer jump
-    if (timerRef.current) clearInterval(timerRef.current)
-    if (waveRef.current) clearInterval(waveRef.current)
-    timerRef.current = null
-    waveRef.current = null
-
-    if (recognitionRef.current) {
-      recognitionRef.current.onend = null // clear to avoid loop
-      recognitionRef.current.stop()
-      recognitionRef.current = null
+  const handleUserSpeech = async (text) => {
+    if (text !== '[SYSTEM_INTERNAL_LOCATION_FETCHED]') {
+      messagesRef.current.push({ role: 'user', content: text })
     }
     
-    setIsListening(false)
-    setWaveformData(Array(28).fill(4))
-    setVolume(0)
-    setIsProcessing(true)
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null
+      recognitionRef.current.stop()
+    }
+    
+    setPhase('analyzing')
+    setStatusMsg(`${activeChar.name} is thinking…`)
+    setLiveText('')
 
-    // Brief processing moment so it doesn't feel instant
-    await new Promise(r => setTimeout(r, 900))
+    try {
+      const response = await chatWithAgent(messagesRef.current, extractedRef.current)
+      if (response.extracted) {
+        extractedRef.current = { ...extractedRef.current, ...response.extracted }
+      }
 
-    setIsProcessing(false)
-    setIsDone(true)
+      if (response.shouldEnd) {
+        setPhase('done')
+        setStatusMsg('Mission complete!')
+        await speakText(response.reply, activeCharRef.current, () => {
+          onComplete?.({ extracted: extractedRef.current, answers: {} })
+        }, (idx, len) => setLiveText(response.reply.slice(0, idx + len)))
+        return
+      }
 
-    const result = liveText.trim() // Use liveText as it has the full current state
+      const isHindi = /[\u0900-\u097F]/.test(response.reply) || 
+                      /\b(mera|hai|ki|ka|tha|madad|kya|nahi)\b/i.test(response.reply)
+      
+      let speechChar = activeCharRef.current
+      if (isHindi && activeCharRef.current.id !== 'devi') {
+        const deviVoice = VOICE_CHARACTERS.find(v => v.id === 'devi')
+        if (deviVoice) {
+          pickChar(deviVoice)
+          speechChar = deviVoice
+          response.reply = "आवाज़ बदलने के लिए माफ़ी चाहूंगी, " + response.reply
+        }
+      }
 
-    // Short "Got it" display then close with transcript
-    await new Promise(r => setTimeout(r, 700))
-    onTranscript?.(result)  // send text back — parent puts it in input, does NOT submit
-    onClose?.()
+      messagesRef.current.push({ role: 'assistant', content: response.reply })
+      setPhase('speaking_q')
+      setStatusMsg(`${speechChar.name} is speaking…`)
+      
+      await speakText(response.reply, speechChar, () => {
+        if (isPaused) return
+        setPhase('listening_answer')
+        setStatusMsg('Listening for your answer…')
+        setLiveText('')
+        startListening(handleUserSpeech)
+      }, (idx, len) => {
+        if (!isPaused) setLiveText(response.reply.slice(0, idx + len))
+      })
+    } catch (e) {
+      setStatusMsg('AI error. Tap to retry.')
+      setPhase('idle')
+    }
   }
 
-  // ── Format timer ──────────────────────────────────────────
-  const fmt = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
+  const isSpeaking = ['greeting', 'speaking_q', 'done'].includes(phase)
+  const isListening = ['listening', 'listening_answer'].includes(phase)
+  const isAnalyzing = phase === 'analyzing'
+  const isInit = phase === 'init' || phase === 'idle'
 
-  const statusText = isListening
-    ? "Tap mic to stop listening when you're complete"
-    : isProcessing
-      ? 'Processing speech...'
-      : isDone
-        ? 'Got it!'
-        : 'Tap mic to start'
+  const ringColor = isPaused ? '#9ca3af' : isListening ? '#ef4444' : isSpeaking ? activeChar.accentColor : isAnalyzing ? '#f59e0b' : 'rgba(255,255,255,0.3)'
 
-  const accentColor = isListening
-    ? '#3b82f6'
-    : isProcessing
-      ? '#f59e0b'
-      : isDone
-        ? 'var(--brand-primary)'
-        : 'rgba(255,255,255,0.5)'
+  const [showVoices, setShowVoices] = useState(false)
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+      if (e.code === 'Space') { e.preventDefault(); togglePause() }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isInit, isListening, isSpeaking, isPaused, phase])
 
   return (
     <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 100000,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: 'rgba(5,25,16,0.9)',
-        backdropFilter: 'blur(18px)',
-      }}
-      onClick={(e) => { if (e.target === e.currentTarget && !isListening) onClose?.() }}
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 100000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#090a0f' }}
     >
-      {/* Particles */}
-      <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none' }}>
+      <AnimatePresence>
         {particles.map(p => (
           <motion.div
-            key={p.id}
-            animate={{ scale: [1, 1.6, 1] }}
-            transition={{ duration: 2 + Math.random(), repeat: Infinity }}
-            style={{
-              position: 'absolute', left: p.x, top: p.y,
-              width: 4, height: 4, borderRadius: '50%',
-              background: 'var(--brand-primary)', opacity: p.opacity,
-            }}
+             key={p.id}
+             initial={{ x: `${p.sx}%`, y: `${p.sy}%`, opacity: 0 }}
+             animate={{ x: `${p.ex}%`, y: `${p.ey}%`, opacity: [0, p.op, 0] }}
+             transition={{ duration: p.dur, repeat: Infinity, ease: 'linear' }}
+             style={{ position: 'absolute', width: 2, height: 2, background: activeChar.accentColor, borderRadius: '50%', pointerEvents: 'none' }}
           />
         ))}
+      </AnimatePresence>
+
+      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, textAlign: 'center' }}>
+          <motion.div
+             animate={{ scale: isSpeaking || isListening ? [1, 1.05, 1] : 1, rotate: isAnalyzing ? 360 : 0 }}
+             transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+             style={{ width: 120, height: 120, borderRadius: '50%', border: `1px solid ${ringColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 40, boxShadow: `0 0 40px ${ringColor}20`, position: 'relative' }}
+          >
+             <span style={{ fontSize: '3rem' }}>{isAnalyzing ? '✨' : activeChar.emoji}</span>
+             {(isSpeaking || isListening) && (
+                <motion.div
+                   animate={{ scale: [1, 1.4, 1], opacity: [0.3, 0, 0.3] }}
+                   transition={{ duration: 2, repeat: Infinity }}
+                   style={{ position: 'absolute', inset: -20, borderRadius: '50%', border: `2px solid ${ringColor}`, pointerEvents: 'none' }}
+                />
+             )}
+          </motion.div>
+
+          <motion.h2
+             key={isInit ? 'init' : liveText.slice(0, 5)}
+             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+             style={{ fontSize: '1.4rem', fontWeight: 700, color: '#fff', maxWidth: 600, lineHeight: 1.4, margin: 0, minHeight: '3em' }}
+          >
+            {isInit ? `👋 hi, I am ${activeChar.name}. How can I help you today?` : (liveText || '...')}
+          </motion.h2>
+          
+          <motion.p
+             animate={{ opacity: isListening ? [1, 0.4, 1] : 0.5 }}
+             transition={{ duration: 1.5, repeat: Infinity }}
+             style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)', marginTop: 28, textTransform: 'uppercase', letterSpacing: '0.15em', fontWeight: 600 }}
+          >
+            {isPaused ? 'Chat Paused' : (isInit ? 'Ready to connect' : statusMsg)}
+          </motion.p>
       </div>
 
-      {/* Glow orb */}
-      <motion.div
-        animate={{
-          scale: isListening ? [1, 1.3, 1] : [1, 1.08, 1],
-          opacity: isListening ? [0.2, 0.45, 0.2] : [0.08, 0.15, 0.08],
-        }}
-        transition={{ duration: 2, repeat: Infinity }}
-        style={{
-          position: 'absolute', width: 400, height: 400, borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(64,145,108,0.4) 0%, transparent 70%)',
-          pointerEvents: 'none',
-        }}
-      />
+      <AnimatePresence>
+      {showVoices && isInit && (
+         <motion.div 
+           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
+           style={{ position: 'fixed', bottom: 140, display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', width: '100%', maxWidth: 440 }}
+         >
+              {VOICE_CHARACTERS.map(char => (
+                <button
+                  key={char.id} type="button"
+                  onClick={() => { pickChar(char); speakText(`Hi, I am ${char.name}.`, char) }}
+                  style={{
+                    padding: '8px 16px', borderRadius: 20, cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
+                    border: `1.5px solid ${char.id === activeChar.id ? char.accentColor : 'rgba(255,255,255,0.1)'}`,
+                    background: char.id === activeChar.id ? `${char.accentColor}22` : 'rgba(255,255,255,0.04)',
+                    color: char.id === activeChar.id ? '#fff' : 'rgba(255,255,255,0.6)',
+                  }}
+                >{char.emoji} {char.name}</button>
+              ))}
+         </motion.div>
+      )}
+      </AnimatePresence>
 
-      {/* Close button */}
-      <button
-        onClick={() => { if (!isListening) onClose?.() }}
-        style={{
-          position: 'absolute', top: 24, right: 24,
-          width: 42, height: 42, borderRadius: '50%',
-          border: '1px solid rgba(255,255,255,0.15)',
-          background: 'rgba(255,255,255,0.07)', color: '#fff',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: isListening ? 'not-allowed' : 'pointer',
-          opacity: isListening ? 0.4 : 1,
-        }}
-        title={isListening ? 'Stop recording first' : 'Close'}
-      >
-        <X size={18} />
-      </button>
-
-      {/* Main content */}
-      <div className="voice-modal-inner" style={{ position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 28, padding: '0 20px', width: 'min(480px, calc(100vw - 32px))' }}>
-        
-        {/* Mic Button */}
-        <div style={{ position: 'relative' }}>
-          <motion.button
-            onClick={isListening ? stopListening : startListening}
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.92 }}
-            animate={isListening ? {
-              boxShadow: ['0 0 0 0px rgba(59,130,246,0.5)', '0 0 0 24px rgba(59,130,246,0)'],
-            } : {}}
-            transition={{ duration: 1.4, repeat: isListening ? Infinity : 0 }}
+      <div style={{ position: 'fixed', bottom: 40, background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 32, padding: '12px 32px', boxShadow: '0 20px 40px rgba(0,0,0,0.4)', zIndex: 50 }}>
+         <button onClick={() => isInit && setShowVoices(!showVoices)} 
+            style={{ background: 'transparent', border: 'none', color: isInit ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.2)', cursor: isInit ? 'pointer' : 'default', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}>
+            <Menu size={22} />
+         </button>
+         
+         <motion.button 
+            onClick={togglePause}
+            whileTap={isInit ? { scale: 0.9 } : {}}
             style={{
-              width: 120, height: 120, borderRadius: '50%',
-              border: `2.5px solid ${accentColor}`,
-              background: 'radial-gradient(circle at 35% 35%, rgba(255,255,255,0.06), rgba(64,145,108,0.12))',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', transition: 'border-color 0.3s',
-            }}
-          >
-            <AnimatePresence mode="wait">
-              {isProcessing ? (
-                <motion.div key="proc" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}>
-                  <Loader2 size={46} color="#f59e0b" style={{ animation: 'spin 1s linear infinite' }} />
-                </motion.div>
-              ) : isDone ? (
-                <motion.div key="done" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}>
-                  <Volume2 size={46} color="var(--brand-primary)" />
-                </motion.div>
-              ) : (
-                <motion.div key="mic" initial={{ opacity: 0, scale: 0.7 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.7 }}>
-                  <Mic size={46} color={isListening ? '#3b82f6' : 'rgba(255,255,255,0.55)'} />
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
-
-          {/* Pulse rings when listening */}
-          <AnimatePresence>
-            {isListening && [0, 0.45].map((delay, i) => (
-              <motion.div
-                key={i}
-                initial={{ scale: 1, opacity: 0.5 }}
-                animate={{ scale: 1.7 + i * 0.35, opacity: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 1.4, repeat: Infinity, delay, ease: 'easeOut' }}
-                style={{
-                  position: 'absolute', inset: 0, borderRadius: '50%',
-                  border: '2px solid rgba(59,130,246,0.4)',
-                  pointerEvents: 'none',
-                }}
-              />
-            ))}
-          </AnimatePresence>
-        </div>
-
-        {/* Waveform */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 3, height: 56 }}>
-          {waveformData.map((h, i) => (
-            <motion.div
-              key={i}
-              animate={{ height: `${isListening ? h * 0.5 : 4}px`, opacity: isListening ? 0.9 : 0.2 }}
-              transition={{ duration: 0.08 }}
-              style={{
-                width: 4, borderRadius: 4, minHeight: 4,
-                background: isListening ? '#3b82f6' : isProcessing ? '#f59e0b' : isDone ? 'var(--brand-primary)' : 'rgba(255,255,255,0.2)',
-                transition: 'background 0.3s',
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Status + Timer */}
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <motion.p
-            animate={{ opacity: isListening ? [1, 0.6, 1] : 1 }}
-            transition={{ duration: 1.6, repeat: isListening ? Infinity : 0 }}
-            style={{ fontSize: '1.1rem', fontWeight: 800, color: accentColor, fontFamily: 'var(--font-display)' }}
-          >
-            {statusText}
-          </motion.p>
-
-          {(isListening || seconds > 0) && (
-            <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.35)', fontFamily: 'monospace', letterSpacing: '0.08em' }}>
-              {fmt(seconds)}
-            </p>
-          )}
-
-          {/* Volume bar */}
-          {isListening && volume > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}
-              style={{ display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'center', marginTop: 4 }}
-            >
-              <VolumeX size={13} color="rgba(255,255,255,0.35)" />
-              <div style={{ width: 80, height: 5, background: 'rgba(255,255,255,0.1)', borderRadius: 99, overflow: 'hidden' }}>
-                <motion.div
-                  animate={{ width: `${volume}%` }}
-                  transition={{ duration: 0.07 }}
-                  style={{ height: '100%', background: '#3b82f6', borderRadius: 99 }}
-                />
-              </div>
-              <Volume2 size={13} color="rgba(255,255,255,0.35)" />
-            </motion.div>
-          )}
-        </div>
-
-        {/* Live transcript preview */}
-        {liveText && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            style={{
-              background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: 16, padding: '14px 18px', width: '100%',
-              maxHeight: 100, overflowY: 'auto',
-            }}
-          >
-            <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', lineHeight: 1.6, margin: 0 }}>
-              {liveText}
-              {isListening && <span style={{ display: 'inline-block', width: 2, height: 14, background: '#3b82f6', marginLeft: 3, verticalAlign: 'middle', animation: 'blink 1s step-end infinite' }} />}
-            </p>
-          </motion.div>
-        )}
-
-        {/* AI tag */}
-        <motion.div
-          animate={{ opacity: [0.4, 0.9, 0.4] }}
-          transition={{ duration: 3, repeat: Infinity }}
-          style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem' }}
-        >
-          <Sparkles size={12} color="var(--brand-primary)" />
-          Powered by Web Speech API · No data stored
-        </motion.div>
+               background: isInit ? 'rgba(255,255,255,0.1)' : (isPaused ? '#6b7280' : activeChar.accentColor),
+               border: 'none', borderRadius: '50%', width: 60, height: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', cursor: 'pointer',
+               boxShadow: (!isInit && !isAnalyzing && !isPaused) ? `0 0 24px ${activeChar.accentColor}90` : 'none', transition: 'all 0.3s', outline: 'none'
+            }}>
+             {isAnalyzing ? <Loader2 size={26} style={{ animation: 'spin 1.5s linear infinite' }} /> 
+              : isPaused ? <Play size={28} fill="#fff" />
+              : (isSpeaking || isListening) ? <Square size={22} fill="#fff" color="#fff" />
+              : <Mic size={28} color="#fff" />
+             }
+         </motion.button>
+         
+         <button onClick={() => { window.speechSynthesis.cancel(); onClose?.() }} 
+            style={{ background: 'transparent', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', outline: 'none' }}>
+            <X size={22} />
+         </button>
       </div>
     </motion.div>
   )
