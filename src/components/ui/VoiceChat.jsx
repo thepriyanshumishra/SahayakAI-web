@@ -133,6 +133,11 @@ export default function VoiceChat({ onClose, onComplete }) {
   const recognitionRef = useRef(null)
   const messagesRef = useRef([])
   const extractedRef = useRef({})
+  const phaseRef = useRef(phase)
+  const silenceTimerRef = useRef(null)
+  const transcriptAccRef = useRef('')
+
+  useEffect(() => { phaseRef.current = phase }, [phase])
 
   useEffect(() => () => {
     window.speechSynthesis.cancel()
@@ -148,25 +153,54 @@ export default function VoiceChat({ onClose, onComplete }) {
 
     const rec = new SpeechRecognition()
     rec.lang = activeCharRef.current.langCode === 'hi' ? 'hi-IN' : 'en-IN'
-    rec.continuous = false
+    rec.continuous = true
     rec.interimResults = true
 
     rec.onresult = e => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+
       let interim = '', final = ''
       for (let i = e.resultIndex; i < e.results.length; i++) {
         if (e.results[i].isFinal) final += e.results[i][0].transcript
         else interim += e.results[i][0].transcript
       }
-      if (final) {
-        setLiveText(final)
-        playHapticPop()
-        onResult(final)
-      } else {
-        setLiveText(interim)
+
+      // Barge-in / Interruption check
+      if (['greeting', 'speaking_q'].includes(phaseRef.current) && (final.trim().length > 2 || interim.trim().length > 4)) {
+        window.speechSynthesis.cancel()
+        setPhase('listening_answer')
+        setStatusMsg('Listening...')
+      }
+
+      if (final) transcriptAccRef.current += final + ' '
+      const currentFullText = transcriptAccRef.current + interim
+      setLiveText(currentFullText)
+
+      // 2.5s trailing silence timeout
+      if (currentFullText.trim().length > 0) {
+        silenceTimerRef.current = setTimeout(() => {
+          playHapticPop()
+          if (recognitionRef.current) {
+            recognitionRef.current.onend = null
+            recognitionRef.current.stop()
+            recognitionRef.current = null
+          }
+          onResult(currentFullText.trim())
+          transcriptAccRef.current = ''
+        }, 2500)
       }
     }
     rec.onerror = () => { setLiveText(''); setStatusMsg('Tap mic to retry'); setPhase('idle') }
-    rec.onend = () => { recognitionRef.current = null }
+    rec.onend = () => { 
+       recognitionRef.current = null 
+       // If ended by browser timeout before 2.5s, force submit if we have text
+       if (transcriptAccRef.current.trim().length > 0) {
+         if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
+         playHapticPop()
+         onResult(transcriptAccRef.current.trim())
+         transcriptAccRef.current = ''
+       }
+    }
     rec.start()
     recognitionRef.current = rec
   }
@@ -183,14 +217,18 @@ export default function VoiceChat({ onClose, onComplete }) {
     messagesRef.current.push({ role: 'assistant', content: promptMsg })
     setLiveText(promptMsg)
 
+    // Start listening concurrently for barge-in checks
+    if (!recognitionRef.current) startListening(handleUserSpeech)
+
     await speakText(promptMsg, activeChar, () => {
       if (isPaused) return
-      setPhase('listening')
-      setStatusMsg('Tell me what happened…')
-      setLiveText('')
-      startListening(handleUserSpeech)
+      if (phaseRef.current === 'greeting') {
+        setPhase('listening')
+        setStatusMsg('Tell me what happened…')
+        setLiveText('')
+      }
     }, (idx, len) => {
-      if (!isPaused) setLiveText(promptMsg.slice(0, idx + len))
+      if (!isPaused && phaseRef.current === 'greeting') setLiveText(promptMsg.slice(0, idx + len))
     })
   }
 
@@ -199,10 +237,12 @@ export default function VoiceChat({ onClose, onComplete }) {
     if (!isPaused) {
       setIsPaused(true)
       window.speechSynthesis.cancel()
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current)
       if (recognitionRef.current) {
         recognitionRef.current.onresult = null
         recognitionRef.current.onend = null
         recognitionRef.current.stop()
+        recognitionRef.current = null
       }
     } else {
       setIsPaused(false)
@@ -210,11 +250,21 @@ export default function VoiceChat({ onClose, onComplete }) {
         startListening(handleUserSpeech)
       } else if (isSpeaking) {
         const lastMsg = messagesRef.current[messagesRef.current.length - 1]?.content || liveText
+        
+        if (!recognitionRef.current) startListening(handleUserSpeech)
+
         speakText(lastMsg, activeCharRef.current, () => {
           if (isPaused) return
-          setPhase(phase === 'greeting' ? 'listening' : 'listening_answer')
-          startListening(handleUserSpeech)
-        }, (idx, len) => setLiveText(lastMsg.slice(0, idx+len)))
+          if (phaseRef.current === 'greeting' || phaseRef.current === 'speaking_q') {
+            setPhase(phaseRef.current === 'greeting' ? 'listening' : 'listening_answer')
+            setStatusMsg('Listening...')
+            setLiveText('')
+          }
+        }, (idx, len) => {
+          if (!isPaused && (phaseRef.current === 'greeting' || phaseRef.current === 'speaking_q')) {
+             setLiveText(lastMsg.slice(0, idx+len))
+          }
+        })
       }
     }
   }
@@ -268,14 +318,20 @@ export default function VoiceChat({ onClose, onComplete }) {
       setPhase('speaking_q')
       setStatusMsg(`${speechChar.name} is speaking…`)
       
+      // Start listening concurrently for barge-in checks
+      if (!recognitionRef.current) startListening(handleUserSpeech)
+
       await speakText(replyText, speechChar, () => {
         if (isPaused) return
-        setPhase('listening_answer')
-        setStatusMsg('Listening for your answer…')
-        setLiveText('')
-        startListening(handleUserSpeech)
+        if (phaseRef.current === 'speaking_q') {
+          setPhase('listening_answer')
+          setStatusMsg('Listening for your answer…')
+          setLiveText('')
+        }
       }, (idx, len) => {
-        if (!isPaused) setLiveText(replyText.slice(0, idx + len))
+        if (!isPaused && phaseRef.current === 'speaking_q') {
+          setLiveText(replyText.slice(0, idx + len))
+        }
       })
     } catch (e) {
       console.error(e)
