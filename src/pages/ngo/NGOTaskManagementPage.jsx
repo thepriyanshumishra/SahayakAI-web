@@ -62,7 +62,7 @@ export default function NGOTaskManagementPage() {
   const [chatId, setChatId] = useState(null)
   const [ratings, setRatings] = useState({})
   const [callHistory, setCallHistory] = useState([])
-  const [sortType, setSortType] = useState('priority') // 'priority', 'newest', 'status'
+  const [sortType, setSortType] = useState('newest') // 'priority', 'newest', 'status'
 
   useEffect(() => {
     if (!user?.uid) return

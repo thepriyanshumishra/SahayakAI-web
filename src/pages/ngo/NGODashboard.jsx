@@ -142,12 +142,10 @@ function NGODashboard() {
           <AnimatePresence>
             {[...tasks]
               .sort((a, b) => {
-                const weights = { high: 3, medium: 2, low: 1 }
-                const weightA = weights[a.priority] || 0
-                const weightB = weights[b.priority] || 0
-                return weightB - weightA
+                const timeA = a.createdAt?.seconds || new Date(a.createdAt).getTime() || 0
+                const timeB = b.createdAt?.seconds || new Date(b.createdAt).getTime() || 0
+                return timeB - timeA
               })
-              .slice(0, 6)
               .map((task, i) => (
                 <TaskCard 
                   key={task.id} 

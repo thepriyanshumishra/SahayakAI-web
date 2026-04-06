@@ -454,8 +454,19 @@ export function subscribeToTaskFeed(callback, options = {}) {
 }
 
 export function subscribeToNGOTasks(ngoUid, callback) {
-  const q = query(collection(db, 'tasks'), where('createdBy', '==', ngoUid), orderBy('createdAt', 'desc'))
-  return onSnapshot(q, (snap) => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))))
+  const q = query(
+    collection(db, 'tasks'), 
+    where('createdBy', '==', ngoUid), 
+    orderBy('createdAt', 'desc')
+  )
+  return onSnapshot(q, 
+    (snap) => callback(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
+    (err) => {
+      console.error('NGO Tasks Subscription Error:', err)
+      // Some simple queries stay empty until the server syncs a null timestamp 
+      // if orderBy is used.
+    }
+  )
 }
 
 export async function getTask(taskId) {

@@ -388,8 +388,18 @@ export default function CreateTaskPage() {
                 if (payload.extracted?.category) up('category', payload.extracted.category)
                 if (payload.extracted?.volunteersNeeded) up('requiredVolunteers', payload.extracted.volunteersNeeded)
                 if (payload.extracted?.location) {
-                  up('address', payload.extracted.location)
-                  setResolvedLocation({ address: payload.extracted.location })
+                  const locStr = payload.extracted.location
+                  const coordMatch = locStr.match(/^(-?\d+\.\d+),\s*(-?\d+\.\d+)$/)
+                  
+                  if (coordMatch) {
+                    const lat = parseFloat(coordMatch[1])
+                    const lng = parseFloat(coordMatch[2])
+                    up('address', `GPS Location (${lat.toFixed(4)}, ${lng.toFixed(4)})`)
+                    setResolvedLocation({ lat, lng, address: 'GPS Location' })
+                  } else {
+                    up('address', locStr)
+                    setResolvedLocation({ address: locStr })
+                  }
                 }
                 if (payload.extracted?.summary) up('description', payload.extracted.summary)
 

@@ -289,6 +289,23 @@ export default function VoiceChat({ onClose, onComplete }) {
         extractedRef.current = { ...extractedRef.current, ...response.extracted }
       }
 
+      if (response.locationRequested) {
+        setStatusMsg('Locking GPS…')
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords
+            extractedRef.current = { ...extractedRef.current, location: `${latitude}, ${longitude}` }
+            const systemMsg = `[SYSTEM_REPORT: GPS Lat:${latitude}, Lng:${longitude}] I've locked the location.`
+            handleUserSpeech(systemMsg)
+          },
+          (err) => {
+            const errorMsg = `[SYSTEM_REPORT: GPS ERROR] I couldn't get the location. Please ask me for the address.`
+            handleUserSpeech(errorMsg)
+          }
+        )
+        return
+      }
+
       if (response.hasEnoughInfo) {
         setPhase('done')
         setStatusMsg('Mission complete!')
