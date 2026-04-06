@@ -318,18 +318,8 @@ export default function VoiceChat({ onClose, onComplete }) {
 
       let replyText = response.nextReply || 'Could you provide more details?'
 
-      const isHindi = /[\u0900-\u097F]/.test(replyText) || 
-                      /\b(mera|hai|ki|ka|tha|madad|kya|nahi)\b/i.test(replyText)
-      
       let speechChar = activeCharRef.current
-      if (isHindi && activeCharRef.current.id !== 'devi') {
-        const deviVoice = VOICE_CHARACTERS.find(v => v.id === 'devi')
-        if (deviVoice) {
-          pickChar(deviVoice)
-          speechChar = deviVoice
-          replyText = "आवाज़ बदलने के लिए माफ़ी चाहूंगी, " + replyText
-        }
-      }
+
 
       messagesRef.current.push({ role: 'assistant', content: replyText })
       setPhase('speaking_q')
