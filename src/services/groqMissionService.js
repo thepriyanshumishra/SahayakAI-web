@@ -28,12 +28,12 @@ Output ONLY JSON matching this structure:
   }
 }`
 
-export async function chatWithAgent(conversationHistory) {
+export async function chatWithAgent(conversationHistory, previousExtracted = {}) {
   if (!GROQ_API_KEY) throw new Error('Groq API key not configured')
 
   // Map our UI history [{role, content}] into Groq format, injecting System Prompt
   const messages = [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: SYSTEM_PROMPT + `\n\nCURRENT EXTRACTED CONTEXT (DO NOT OVERWRITE UNLESS USER CORRECTS YOU): ${JSON.stringify(previousExtracted)}` },
     ...conversationHistory.map(m => ({ role: m.role, content: m.content }))
   ]
 

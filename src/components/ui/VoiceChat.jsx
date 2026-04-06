@@ -239,17 +239,18 @@ export default function VoiceChat({ onClose, onComplete }) {
         extractedRef.current = { ...extractedRef.current, ...response.extracted }
       }
 
-      if (response.shouldEnd) {
+      if (response.hasEnoughInfo) {
         setPhase('done')
         setStatusMsg('Mission complete!')
-        await speakText(response.reply, activeCharRef.current, () => {
+        const finalReply = response.nextReply || "Thank you. I have all the details. Mission is being deployed."
+        await speakText(finalReply, activeCharRef.current, () => {
           onComplete?.({ extracted: extractedRef.current, answers: {} })
-        }, (idx, len) => setLiveText(response.reply.slice(0, idx + len)))
+        }, (idx, len) => setLiveText(finalReply.slice(0, idx + len)))
         return
       }
 
-      const isHindi = /[\u0900-\u097F]/.test(response.reply) || 
-                      /\b(mera|hai|ki|ka|tha|madad|kya|nahi)\b/i.test(response.reply)
+      const isHindi = /[\u0900-\u097F]/.test(response.nextReply) || 
+                      /\b(mera|hai|ki|ka|tha|madad|kya|nahi)\b/i.test(response.nextReply)
       
       let speechChar = activeCharRef.current
       if (isHindi && activeCharRef.current.id !== 'devi') {
@@ -257,24 +258,24 @@ export default function VoiceChat({ onClose, onComplete }) {
         if (deviVoice) {
           pickChar(deviVoice)
           speechChar = deviVoice
-          response.reply = "आवाज़ बदलने के लिए माफ़ी चाहूंगी, " + response.reply
         }
       }
 
-      messagesRef.current.push({ role: 'assistant', content: response.reply })
+      messagesRef.current.push({ role: 'assistant', content: response.nextReply })
       setPhase('speaking_q')
       setStatusMsg(`${speechChar.name} is speaking…`)
       
-      await speakText(response.reply, speechChar, () => {
+      await speakText(response.nextReply, speechChar, () => {
         if (isPaused) return
         setPhase('listening_answer')
         setStatusMsg('Listening for your answer…')
         setLiveText('')
         startListening(handleUserSpeech)
       }, (idx, len) => {
-        if (!isPaused) setLiveText(response.reply.slice(0, idx + len))
+        if (!isPaused) setLiveText(response.nextReply.slice(0, idx + len))
       })
     } catch (e) {
+      console.error('VoiceChat AI Error:', e)
       setStatusMsg('AI error. Tap to retry.')
       setPhase('idle')
     }
