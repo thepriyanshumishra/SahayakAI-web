@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "sahayakai-prod"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

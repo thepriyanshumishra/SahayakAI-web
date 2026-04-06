@@ -1,42 +1,56 @@
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
-import { storage } from '../config/firebase.js'
+/**
+ * Helper to upload a file/blob to Cloudinary
+ * @param {File|Blob} file 
+ * @param {string} folder 
+ * @returns {Promise<string>} secure_url
+ */
+async function uploadToCloudinary(file, folder) {
+  const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+  const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+
+  if (!cloudName || !uploadPreset) {
+    throw new Error('Cloudinary configuration is missing in .env')
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('upload_preset', uploadPreset)
+  formData.append('folder', `sahayak/${folder}`)
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${cloudName}/upload`,
+    {
+      method: 'POST',
+      body: formData,
+    }
+  )
+
+  if (!response.ok) {
+    const error = await response.json()
+    throw new Error(`Cloudinary upload failed: ${error.error?.message || 'Unknown error'}`)
+  }
+
+  const data = await response.json()
+  return data.secure_url
+}
 
 /**
  * Upload a call audio recording
- * @param {string} callId
- * @param {'ngo'|'volunteer'} role
- * @param {Blob} audioBlob
- * @returns {string} download URL
  */
 export async function uploadCallAudio(callId, role, audioBlob) {
-  const storageRef = ref(storage, `calls/${callId}/${role}_audio`)
-  const snap = await uploadBytes(storageRef, audioBlob, {
-    contentType: audioBlob.type || 'audio/webm',
-  })
-  return getDownloadURL(snap.ref)
+  return uploadToCloudinary(audioBlob, `calls/${callId}`)
 }
 
 /**
  * Upload task completion photo
- * @param {string} taskId
- * @param {string} volunteerId
- * @param {File} file
- * @returns {string} download URL
  */
 export async function uploadCompletionPhoto(taskId, volunteerId, file) {
-  const storageRef = ref(storage, `completions/${taskId}/${volunteerId}_photo`)
-  const snap = await uploadBytes(storageRef, file)
-  return getDownloadURL(snap.ref)
+  return uploadToCloudinary(file, `completions/${taskId}`)
 }
 
 /**
  * Upload NGO verification document
- * @param {string} uid
- * @param {File} file
- * @returns {string} download URL
  */
 export async function uploadNGODoc(uid, file) {
-  const storageRef = ref(storage, `ngo_docs/${uid}/${file.name}`)
-  const snap = await uploadBytes(storageRef, file)
-  return getDownloadURL(snap.ref)
+  return uploadToCloudinary(file, `ngo_docs/${uid}`)
 }
